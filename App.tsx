@@ -1,20 +1,36 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+// App.tsx
 
-export default function App() {
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+import FoodInputScreen from './screens/FoodInputScreen';
+import FoodInfoScreen from './screens/FoodInfoScreen';
+import SearchScreen from './screens/SearchScreen';
+
+const Stack = createStackNavigator();
+
+const App = () => {
   return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <NavigationContainer>
+      <Stack.Navigator initialRouteName="FoodInputScreen">
+        <Stack.Screen
+          name="FoodInputScreen"
+          component={FoodInputScreen}
+          options={{ title: 'Food Input' }}
+        />
+        <Stack.Screen
+          name="FoodInfoScreen"
+          component={FoodInfoScreen}
+          options={{ title: 'Food Information' }}
+        />
+        <Stack.Screen
+          name="SearchScreen"
+          component={SearchScreen}
+          options={{ title: 'Search Food' }}
+        />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
-}
+};
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+export default App;
