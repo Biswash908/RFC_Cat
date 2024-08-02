@@ -1,5 +1,3 @@
-// App.tsx
-
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -16,7 +14,7 @@ const App = () => {
         <Stack.Screen
           name="FoodInputScreen"
           component={FoodInputScreen}
-          options={{ title: 'Food Input' }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="FoodInfoScreen"
@@ -26,7 +24,7 @@ const App = () => {
         <Stack.Screen
           name="SearchScreen"
           component={SearchScreen}
-          options={{ title: 'Search Food' }}
+          options={{ title: 'Search Ingredients' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

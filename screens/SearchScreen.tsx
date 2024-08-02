@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, TextInput, FlatList, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 
 const SearchScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -12,7 +13,7 @@ const SearchScreen = () => {
     { id: '5', name: 'Beef - Steak', meat: 100, bone: 0, organ: 0 },
     { id: '6', name: 'Beef - Trachea', meat: 100, bone: 0, organ: 0 },
     { id: '7', name: 'Bone 100%', meat: 0, bone: 100, organ: 0 },
-    { id: '8', name: 'Bone Meal', meat: 0, bone: 416.667, organ: 0 },
+    { id: '8', name: 'Bone Meal', meat: 0, bone: 100, organ: 0 },
     { id: '9', name: 'Chicken - Back', meat: 50, bone: 50, organ: 0 },
     { id: '10', name: 'Chicken - Breast boneless', meat: 100, bone: 0, organ: 0 },
     { id: '11', name: 'Chicken - Breast portion', meat: 80, bone: 20, organ: 0 },
@@ -86,9 +87,15 @@ const SearchScreen = () => {
     { id: '79', name: 'Veal - Kidney', meat: 0, bone: 0, organ: 100 },
   ]);
 
+  const navigation = useNavigation();
+
   const filteredIngredients = ingredients.filter(ingredient =>
     ingredient.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handlePressIngredient = (ingredient) => {
+    navigation.navigate('FoodInfoScreen', { ingredient });
+  };
 
   return (
     <View style={styles.container}>
@@ -96,9 +103,11 @@ const SearchScreen = () => {
         data={filteredIngredients}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <View style={styles.ingredientItem}>
-            <Text style={styles.ingredientText}>{item.name}</Text>
-          </View>
+          <TouchableOpacity onPress={() => handlePressIngredient(item)}>
+            <View style={styles.ingredientItem}>
+              <Text style={styles.ingredientText}>{item.name}</Text>
+            </View>
+          </TouchableOpacity>
         )}
         ListEmptyComponent={() => <Text style={styles.emptyText}>No ingredients found</Text>}
         style={styles.ingredientList}

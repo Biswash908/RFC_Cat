@@ -1,13 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { FontAwesome } from '@expo/vector-icons';
 
 const FoodInputScreen = () => {
   const navigation = useNavigation();
+  const route = useRoute();
 
   // Start with an empty list of ingredients
   const [ingredients, setIngredients] = useState([]);
+  const [totalMeat, setTotalMeat] = useState(0);
+  const [totalBone, setTotalBone] = useState(0);
+  const [totalOrgan, setTotalOrgan] = useState(0);
+
+  useEffect(() => {
+    // Check if there's a new ingredient coming from FoodInfoScreen
+    if (route.params?.updatedIngredient) {
+      const newIngredient = route.params.updatedIngredient;
+      const updatedIngredients = [...ingredients, newIngredient];
+      setIngredients(updatedIngredients);
+
+      // Update total percentages
+      const totalWeight = updatedIngredients.reduce((sum, ing) => sum + ing.totalWeight, 0);
+      const meatPercentage = updatedIngredients.reduce((sum, ing) => sum + ing.meatWeight, 0) / totalWeight * 100 || 0;
+      const bonePercentage = updatedIngredients.reduce((sum, ing) => sum + ing.boneWeight, 0) / totalWeight * 100 || 0;
+      const organPercentage = updatedIngredients.reduce((sum, ing) => sum + ing.organWeight, 0) / totalWeight * 100 || 0;
+
+      setTotalMeat(meatPercentage);
+      setTotalBone(bonePercentage);
+      setTotalOrgan(organPercentage);
+    }
+  }, [route.params?.updatedIngredient]);
 
   return (
     <View style={styles.container}>
@@ -23,7 +46,9 @@ const FoodInputScreen = () => {
       </View>
 
       <View style={styles.totalBar}>
-        <Text style={styles.totalText}>Total: 0.00% Meat  0.00% Bone  0.00% Organ</Text>
+        <Text style={styles.totalText}>
+          Total: {totalMeat.toFixed(2)}% Meat  {totalBone.toFixed(2)}% Bone  {totalOrgan.toFixed(2)}% Organ
+        </Text>
       </View>
 
       <ScrollView style={styles.ingredientList}>
@@ -32,11 +57,17 @@ const FoodInputScreen = () => {
         ) : (
           ingredients.map((ingredient, index) => (
             <View key={index} style={styles.ingredientItem}>
-              <Text style={styles.ingredientText}>{ingredient.name}</Text>
-              <Text style={styles.ingredientDetails}>
-                {ingredient.meat} M  {ingredient.bone} B  {ingredient.organ} O  {ingredient.weight}
-              </Text>
-              <TouchableOpacity style={styles.editButton}>
+              <View style={styles.ingredientInfo}>
+                <Text style={styles.ingredientText}>{ingredient.name}</Text>
+                <Text style={styles.ingredientDetails}>
+                  M: {ingredient.meatWeight.toFixed(2)} kg  B: {ingredient.boneWeight.toFixed(2)} kg  O: {ingredient.organWeight.toFixed(2)} kg
+                </Text>
+                <Text style={styles.totalWeightText}>Total: {ingredient.totalWeight.toFixed(2)} kg</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.editButton}
+                onPress={() => navigation.navigate('FoodInfoScreen', { ingredient, editMode: true })}
+              >
                 <FontAwesome name="edit" size={20} color="black" />
               </TouchableOpacity>
             </View>
@@ -65,7 +96,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
   },
   topBar: {
-    backgroundColor: '#32CD32', // Bright green color
+    backgroundColor: '#32CD32',
     padding: 15,
     alignItems: 'center',
   },
@@ -109,23 +140,33 @@ const styles = StyleSheet.create({
     padding: 15,
     borderBottomWidth: 1,
     borderColor: '#ccc',
+    marginBottom: 10,
+  },
+  ingredientInfo: {
+    flex: 1,
   },
   ingredientText: {
     fontSize: 16,
+    marginBottom: 5,
   },
   ingredientDetails: {
+    fontSize: 14,
+    color: '#555',
+  },
+  totalWeightText: {
     fontSize: 14,
     color: '#555',
   },
   editButton: {
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 10,
   },
   bottomNav: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     padding: 15,
-    backgroundColor: '#32CD32', // Bright green color
+    backgroundColor: '#32CD32',
   },
 });
 
