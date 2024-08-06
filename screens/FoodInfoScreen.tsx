@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 
@@ -25,18 +25,19 @@ const FoodInfoScreen = ({ route, navigation }: Props) => {
 
   const calculateWeight = (percentage: number) => {
     const weightNum = parseFloat(weight);
-    return isNaN(weightNum) ? 0 : (weightNum * percentage) / 100;
+    return isNaN(weightNum) ? 0 : (weightNum * percentage) / 100; // Keep in grams
   };
 
   const handleSaveIngredient = () => {
+    const weightInGrams = parseFloat(weight); // Already in grams
     const meatWeight = calculateWeight(ingredient.meat);
     const boneWeight = calculateWeight(ingredient.bone);
     const organWeight = calculateWeight(ingredient.organ);
-    const totalWeight = meatWeight + boneWeight + organWeight;
+    const totalWeight = weightInGrams;
 
     const updatedIngredient = {
       ...ingredient,
-      weight: parseFloat(weight),
+      weight: weightInGrams,
       meatWeight,
       boneWeight,
       organWeight,
@@ -52,20 +53,24 @@ const FoodInfoScreen = ({ route, navigation }: Props) => {
       <View style={styles.underline} />
       <TextInput
         style={styles.input}
-        placeholder="Enter ingredient weight in kg"
+        placeholder="Enter ingredient weight in grams"
         keyboardType="numeric"
         value={weight}
         onChangeText={setWeight}
       />
       <View style={styles.resultContainer}>
-        <Text style={styles.resultText}>Meat: {ingredient.meat}% - {calculateWeight(ingredient.meat)} kg</Text>
-        <Text style={styles.resultText}>Bone: {ingredient.bone}% - {calculateWeight(ingredient.bone)} kg</Text>
-        <Text style={styles.resultText}>Organ: {ingredient.organ}% - {calculateWeight(ingredient.organ)} kg</Text>
+        <Text style={styles.resultText}>Meat: {ingredient.meat}% - {calculateWeight(ingredient.meat).toFixed(2)} g</Text>
+        <Text style={styles.resultText}>Bone: {ingredient.bone}% - {calculateWeight(ingredient.bone).toFixed(2)} g</Text>
+        <Text style={styles.resultText}>Organ: {ingredient.organ}% - {calculateWeight(ingredient.organ).toFixed(2)} g</Text>
       </View>
-      <Button
-        title={editMode ? "Save Ingredient" : "Add Ingredient"}
+      <TouchableOpacity
+        style={styles.button}
         onPress={handleSaveIngredient}
-      />
+      >
+        <Text style={styles.buttonText}>
+          {editMode ? "Save Ingredient" : "Add Ingredient"}
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -99,6 +104,18 @@ const styles = StyleSheet.create({
   resultText: {
     fontSize: 18,
     marginVertical: 5,
+  },
+  button: {
+    marginTop: 40,
+    backgroundColor: '#84DD06',
+    paddingVertical: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });
 
