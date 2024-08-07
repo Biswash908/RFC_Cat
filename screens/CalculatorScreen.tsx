@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 
-const CalculatorScreen = ({ totalWeight = 0, meatRatio: initialMeatRatio = 80, boneRatio: initialBoneRatio = 10, organRatio: initialOrganRatio = 10 }) => {
+const CalculatorScreen = ({ totalWeight = 100, initialMeatRatio = 80, initialBoneRatio = 10, initialOrganRatio = 10 }) => {
   const [meatRatio, setMeatRatio] = useState(initialMeatRatio);
   const [boneRatio, setBoneRatio] = useState(initialBoneRatio);
   const [organRatio, setOrganRatio] = useState(initialOrganRatio);
@@ -17,79 +17,74 @@ const CalculatorScreen = ({ totalWeight = 0, meatRatio: initialMeatRatio = 80, b
   const adjustRatios = (newMeat, newBone, newOrgan, changed) => {
     let total = newMeat + newBone + newOrgan;
 
-    if (total > 100) {
-      let excess = total - 100;
+    if (total === 100) {
+      setMeatRatio(newMeat);
+      setBoneRatio(newBone);
+      setOrganRatio(newOrgan);
+      return;
+    }
 
-      if (changed === 'meat') {
-        if (lastEdited === 'bone') {
-          newOrgan = Math.max(0, newOrgan - excess);
-          if (newOrgan < 0) {
-            excess -= newOrgan;
-            newOrgan = 0;
-            newBone = Math.max(0, newBone - excess);
-          }
-        } else {
-          newBone = Math.max(0, newBone - excess);
-          if (newBone < 0) {
-            excess -= newBone;
-            newBone = 0;
+    let excess = total - 100;
+
+    if (total > 100) {
+      switch (changed) {
+        case 'meat':
+          if (lastEdited === 'bone') {
             newOrgan = Math.max(0, newOrgan - excess);
-          }
-        }
-      } else if (changed === 'bone') {
-        if (lastEdited === 'meat') {
-          newOrgan = Math.max(0, newOrgan - excess);
-          if (newOrgan < 0) {
-            excess -= newOrgan;
-            newOrgan = 0;
-            newMeat = Math.max(0, newMeat - excess);
-          }
-        } else {
-          newMeat = Math.max(0, newMeat - excess);
-          if (newMeat < 0) {
-            excess -= newMeat;
-            newMeat = 0;
-            newOrgan = Math.max(0, newOrgan - excess);
-          }
-        }
-      } else {
-        if (lastEdited === 'meat') {
-          newBone = Math.max(0, newBone - excess);
-          if (newBone < 0) {
-            excess -= newBone;
-            newBone = 0;
-            newMeat = Math.max(0, newMeat - excess);
-          }
-        } else {
-          newMeat = Math.max(0, newMeat - excess);
-          if (newMeat < 0) {
-            excess -= newMeat;
-            newMeat = 0;
+            if (newOrgan === 0) newBone = Math.max(0, newBone - (excess - newOrgan));
+          } else {
             newBone = Math.max(0, newBone - excess);
+            if (newBone === 0) newOrgan = Math.max(0, newOrgan - (excess - newBone));
           }
-        }
+          break;
+        case 'bone':
+          if (lastEdited === 'meat') {
+            newOrgan = Math.max(0, newOrgan - excess);
+            if (newOrgan === 0) newMeat = Math.max(0, newMeat - (excess - newOrgan));
+          } else {
+            newMeat = Math.max(0, newMeat - excess);
+            if (newMeat === 0) newOrgan = Math.max(0, newOrgan - (excess - newMeat));
+          }
+          break;
+        case 'organ':
+          if (lastEdited === 'meat') {
+            newBone = Math.max(0, newBone - excess);
+            if (newBone === 0) newMeat = Math.max(0, newMeat - (excess - newBone));
+          } else {
+            newMeat = Math.max(0, newMeat - excess);
+            if (newMeat === 0) newBone = Math.max(0, newBone - (excess - newMeat));
+          }
+          break;
+        default:
+          break;
       }
     } else if (total < 100) {
       const shortage = 100 - total;
 
-      if (changed === 'meat') {
-        if (lastEdited === 'bone') {
-          newOrgan = Math.min(100, newOrgan + shortage);
-        } else {
-          newBone = Math.min(100, newBone + shortage);
-        }
-      } else if (changed === 'bone') {
-        if (lastEdited === 'meat') {
-          newOrgan = Math.min(100, newOrgan + shortage);
-        } else {
-          newMeat = Math.min(100, newMeat + shortage);
-        }
-      } else {
-        if (lastEdited === 'meat') {
-          newBone = Math.min(100, newBone + shortage);
-        } else {
-          newMeat = Math.min(100, newMeat + shortage);
-        }
+      switch (changed) {
+        case 'meat':
+          if (lastEdited === 'bone') {
+            newOrgan = Math.min(100, newOrgan + shortage);
+          } else {
+            newBone = Math.min(100, newBone + shortage);
+          }
+          break;
+        case 'bone':
+          if (lastEdited === 'meat') {
+            newOrgan = Math.min(100, newOrgan + shortage);
+          } else {
+            newMeat = Math.min(100, newMeat + shortage);
+          }
+          break;
+        case 'organ':
+          if (lastEdited === 'meat') {
+            newBone = Math.min(100, newBone + shortage);
+          } else {
+            newMeat = Math.min(100, newMeat + shortage);
+          }
+          break;
+        default:
+          break;
       }
     }
 
@@ -120,26 +115,27 @@ const CalculatorScreen = ({ totalWeight = 0, meatRatio: initialMeatRatio = 80, b
     Alert.alert('Corrector Information', 'Add your explanation here...');
   };
 
-  const calculateCorrection = (desiredMeat, desiredBone, desiredOrgan) => {
-    // Prevent division by zero
-    if (totalWeight === 0) {
-      return { meat: NaN, bone: NaN, organ: NaN };
-    }
+  const calculateCorrection = (correctMeat, correctBone, correctOrgan) => {
+    // Calculate actual weights
+    const currentMeatWeight = (totalWeight * meatRatio) / 100;
+    const currentBoneWeight = (totalWeight * boneRatio) / 100;
+    const currentOrganWeight = (totalWeight * organRatio) / 100;
 
-    const meatDiff = desiredMeat - meatRatio;
-    const boneDiff = desiredBone - boneRatio;
-    const organDiff = desiredOrgan - organRatio;
+    const desiredMeatWeight = (totalWeight * correctMeat) / 100;
+    const desiredBoneWeight = (totalWeight * correctBone) / 100;
+    const desiredOrganWeight = (totalWeight * correctOrgan) / 100;
 
     return {
-      meat: (meatDiff * totalWeight) / 100,
-      bone: (boneDiff * totalWeight) / 100,
-      organ: (organDiff * totalWeight) / 100,
+      meatCorrection: desiredMeatWeight - currentMeatWeight,
+      boneCorrection: desiredBoneWeight - currentBoneWeight,
+      organCorrection: desiredOrganWeight - currentOrganWeight,
     };
   };
 
-  const meatCorrection = calculateCorrection(80, boneRatio, organRatio); // Example ratios
-  const boneCorrection = calculateCorrection(meatRatio, 10, organRatio); // Example ratios
-  const organCorrection = calculateCorrection(meatRatio, boneRatio, 10); // Example ratios
+  // Calculate corrections based on each ratio being the correct one
+  const meatCorrect = calculateCorrection(80, 10, 10); // Assume meat is correct
+  const boneCorrect = calculateCorrection(80, 10, 10); // Assume bone is correct
+  const organCorrect = calculateCorrection(80, 10, 10); // Assume organ is correct
 
   return (
     <View style={styles.container}>
@@ -213,26 +209,20 @@ const CalculatorScreen = ({ totalWeight = 0, meatRatio: initialMeatRatio = 80, b
 
       <View style={styles.correctorContainer}>
         <Text style={styles.correctorTitle}>Meat Correct</Text>
-        <Text>Add Bone: {meatCorrection.bone.toFixed(2)} g</Text>
-        <Text>Remove Bone: {(-meatCorrection.bone).toFixed(2)} g</Text>
-        <Text>Add Organ: {meatCorrection.organ.toFixed(2)} g</Text>
-        <Text>Remove Organ: {(-meatCorrection.organ).toFixed(2)} g</Text>
+        <Text>Bone: {meatCorrect.boneCorrection.toFixed(2)} g</Text>
+        <Text>Organ: {meatCorrect.organCorrection.toFixed(2)} g</Text>
       </View>
 
       <View style={styles.correctorContainer}>
         <Text style={styles.correctorTitle}>Bone Correct</Text>
-        <Text>Add Meat: {boneCorrection.meat.toFixed(2)} g</Text>
-        <Text>Remove Meat: {(-boneCorrection.meat).toFixed(2)} g</Text>
-        <Text>Add Organ: {boneCorrection.organ.toFixed(2)} g</Text>
-        <Text>Remove Organ: {(-boneCorrection.organ).toFixed(2)} g</Text>
+        <Text>Meat: {boneCorrect.meatCorrection.toFixed(2)} g</Text>
+        <Text>Organ: {boneCorrect.organCorrection.toFixed(2)} g</Text>
       </View>
 
       <View style={styles.correctorContainer}>
         <Text style={styles.correctorTitle}>Organ Correct</Text>
-        <Text>Add Meat: {organCorrection.meat.toFixed(2)} g</Text>
-        <Text>Remove Meat: {(-organCorrection.meat).toFixed(2)} g</Text>
-        <Text>Add Bone: {organCorrection.bone.toFixed(2)} g</Text>
-        <Text>Remove Bone: {(-organCorrection.bone).toFixed(2)} g</Text>
+        <Text>Meat: {organCorrect.meatCorrection.toFixed(2)} g</Text>
+        <Text>Bone: {organCorrect.boneCorrection.toFixed(2)} g</Text>
       </View>
     </View>
   );
@@ -311,7 +301,7 @@ const styles = StyleSheet.create({
   infoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: '10',
+    marginTop: 20,
   },
   infoText: {
     fontSize: 18,
@@ -335,7 +325,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   correctorContainer: {
-    marginTop: 15,
+    marginTop: 10,
     padding: 15,
     borderWidth: 1,
     borderColor: '#84DD06',
@@ -344,7 +334,7 @@ const styles = StyleSheet.create({
   correctorTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 5,
   },
 });
 
