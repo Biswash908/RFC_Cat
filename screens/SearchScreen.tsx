@@ -91,8 +91,7 @@ const SearchScreen = () => {
     { id: '76', name: 'Unbalanced Premade 94/3/3', meat: 94, bone: 3, organ: 3 },
     { id: '77', name: 'Unbalanced Premade 85/10/5', meat: 85, bone: 10, organ: 5 },
     { id: '78', name: 'Veal Heart', meat: 100, bone: 0, organ: 0 },
-    { id: '79', name: 'Veal Kidney', meat: 0, bone: 0, organ: 100 }
-    
+    { id: '79', name: 'Veal Kidney', meat: 0, bone: 0, organ: 100 },
   ]);
 
   const navigation = useNavigation<SearchScreenNavigationProp>();

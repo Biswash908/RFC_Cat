@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, SafeAreaView, StatusBar } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -13,6 +12,7 @@ type Ingredient = {
 };
 
 type RootStackParamList = {
+  FoodInputScreen: undefined;
   FoodInfoScreen: { ingredient: Ingredient; editMode: boolean };
   SearchScreen: undefined;
   CalculatorScreen: { meat: number; bone: number; organ: number };
@@ -50,25 +50,17 @@ const FoodInputScreen = () => {
   }, [route.params?.updatedIngredient]);
 
   const calculateTotals = (updatedIngredients: Ingredient[]) => {
-    if (updatedIngredients.length === 0) {
-      setTotalWeight(0);
-      setTotalMeat(0);
-      setTotalBone(0);
-      setTotalOrgan(0);
-      return;
-    }
-  
     const totalWt = updatedIngredients.reduce((sum, ing) => sum + ing.totalWeight, 0);
+    const meatWeight = updatedIngredients.reduce((sum, ing) => sum + ing.meatWeight, 0);
+    const boneWeight = updatedIngredients.reduce((sum, ing) => sum + ing.boneWeight, 0);
+    const organWeight = updatedIngredients.reduce((sum, ing) => sum + ing.organWeight, 0);
+
     setTotalWeight(totalWt);
-  
-    const meatPercentage = updatedIngredients.reduce((sum, ing) => sum + ing.meatWeight, 0) / totalWt * 100 || 0;
-    const bonePercentage = updatedIngredients.reduce((sum, ing) => sum + ing.boneWeight, 0) / totalWt * 100 || 0;
-    const organPercentage = updatedIngredients.reduce((sum, ing) => sum + ing.organWeight, 0) / totalWt * 100 || 0;
-  
-    setTotalMeat(meatPercentage);
-    setTotalBone(bonePercentage);
-    setTotalOrgan(organPercentage);
+    setTotalMeat(meatWeight);
+    setTotalBone(boneWeight);
+    setTotalOrgan(organWeight);
   };
+
   const handleDeleteIngredient = (name: string) => {
     Alert.alert(
       'Delete Ingredient',
@@ -101,10 +93,12 @@ const FoodInputScreen = () => {
 
         <View style={styles.totalBar}>
           <Text style={styles.totalText}>
-            Total: {totalWeight.toFixed(2) / 1000} kg
+            Total: {totalWeight.toFixed(2)} g
           </Text>
           <Text style={styles.subTotalText}>
-            Meat: {totalMeat.toFixed(2)}% | Bone: {totalBone.toFixed(2)}% | Organ: {totalOrgan.toFixed(2)}%
+            Meat: {totalMeat.toFixed(2)} g ({(totalMeat / totalWeight * 100).toFixed(2)}%) | 
+            Bone: {totalBone.toFixed(2)} g ({(totalBone / totalWeight * 100).toFixed(2)}%) | 
+            Organ: {totalOrgan.toFixed(2)} g ({(totalOrgan / totalWeight * 100).toFixed(2)}%)
           </Text>
         </View>
 
@@ -117,9 +111,9 @@ const FoodInputScreen = () => {
                 <View style={styles.ingredientInfo}>
                   <Text style={styles.ingredientText}>{ingredient.name}</Text>
                   <Text style={styles.ingredientDetails}>
-                    M: {(ingredient.meatWeight).toFixed(2)} g  B: {(ingredient.boneWeight).toFixed(2)} g  O: {(ingredient.organWeight).toFixed(2)} g
+                    M: {ingredient.meatWeight.toFixed(2)} g  B: {ingredient.boneWeight.toFixed(2)} g  O: {ingredient.organWeight.toFixed(2)} g
                   </Text>
-                  <Text style={styles.totalWeightText}>Total: {(ingredient.totalWeight).toFixed(2)} g</Text>
+                  <Text style={styles.totalWeightText}>Total: {ingredient.totalWeight.toFixed(2)} g</Text>
                 </View>
                 <View style={styles.iconsContainer}>
                   <TouchableOpacity
@@ -142,8 +136,8 @@ const FoodInputScreen = () => {
 
         <TouchableOpacity
           style={styles.calculateButton}
-          onPress={() => navigation.navigate('CalculatorScreen', { meat: totalMeat, bone: totalBone, organ: totalOrgan })}
-        >
+          onPress={() =>
+            navigation.navigate('CalculatorScreen', { meat: totalMeat, bone: totalBone, organ: totalOrgan })}>
           <Text style={styles.calculateButtonText}>Calculate</Text>
         </TouchableOpacity>
 
@@ -162,7 +156,6 @@ const FoodInputScreen = () => {
     </SafeAreaView>
   );
 };
-
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -203,7 +196,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   subTotalText: {
-    fontSize: 16,
+    fontSize: 14,
     color: 'black',
   },
   ingredientList: {
