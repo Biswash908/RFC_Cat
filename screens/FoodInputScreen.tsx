@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, SafeAreaView, StatusBar } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -60,20 +61,14 @@ const FoodInputScreen = () => {
     const totalWt = updatedIngredients.reduce((sum, ing) => sum + ing.totalWeight, 0);
     setTotalWeight(totalWt);
   
-    const meatWeight = updatedIngredients.reduce((sum, ing) => sum + ing.meatWeight, 0);
-    const boneWeight = updatedIngredients.reduce((sum, ing) => sum + ing.boneWeight, 0);
-    const organWeight = updatedIngredients.reduce((sum, ing) => sum + ing.organWeight, 0);
+    const meatPercentage = updatedIngredients.reduce((sum, ing) => sum + ing.meatWeight, 0) / totalWt * 100 || 0;
+    const bonePercentage = updatedIngredients.reduce((sum, ing) => sum + ing.boneWeight, 0) / totalWt * 100 || 0;
+    const organPercentage = updatedIngredients.reduce((sum, ing) => sum + ing.organWeight, 0) / totalWt * 100 || 0;
   
-    const meatPercentage = (meatWeight / totalWt) * 100 || 0;
-    const bonePercentage = (boneWeight / totalWt) * 100 || 0;
-    const organPercentage = (organWeight / totalWt) * 100 || 0;
-  
-    setTotalMeat(meatWeight);
-    setTotalBone(boneWeight);
-    setTotalOrgan(organWeight);
-    setTotalWeight(totalWt);
+    setTotalMeat(meatPercentage);
+    setTotalBone(bonePercentage);
+    setTotalOrgan(organPercentage);
   };
-
   const handleDeleteIngredient = (name: string) => {
     Alert.alert(
       'Delete Ingredient',
@@ -106,12 +101,10 @@ const FoodInputScreen = () => {
 
         <View style={styles.totalBar}>
           <Text style={styles.totalText}>
-            Total: {totalWeight.toFixed(2)} g ({(totalWeight / 1000).toFixed(2)} kg)
+            Total: {totalWeight.toFixed(2) / 1000} kg
           </Text>
           <Text style={styles.subTotalText}>
-            Meat: {totalMeat.toFixed(2)} g ({(totalMeat / totalWeight * 100).toFixed(2)}%) | 
-            Bone: {totalBone.toFixed(2)} g ({(totalBone / totalWeight * 100).toFixed(2)}%) | 
-            Organ: {totalOrgan.toFixed(2)} g ({(totalOrgan / totalWeight * 100).toFixed(2)}%)
+            Meat: {totalMeat.toFixed(2)}% | Bone: {totalBone.toFixed(2)}% | Organ: {totalOrgan.toFixed(2)}%
           </Text>
         </View>
 
@@ -170,6 +163,7 @@ const FoodInputScreen = () => {
   );
 };
 
+
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -206,11 +200,10 @@ const styles = StyleSheet.create({
   },
   totalText: {
     fontSize: 16,
-    fontWeight: 'bold', // Bold for total
+    fontWeight: 'bold',
   },
   subTotalText: {
-    fontSize: 14,
-    fontWeight: 'normal', // Normal weight for percentages
+    fontSize: 16,
     color: 'black',
   },
   ingredientList: {

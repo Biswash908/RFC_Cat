@@ -1,340 +1,296 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, TextInput, SafeAreaView, StatusBar, Alert } from 'react-native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { FontAwesome } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const CalculatorScreen = ({ totalWeight = 100, initialMeatRatio = 80, initialBoneRatio = 10, initialOrganRatio = 10 }) => {
-  const [meatRatio, setMeatRatio] = useState(initialMeatRatio);
-  const [boneRatio, setBoneRatio] = useState(initialBoneRatio);
-  const [organRatio, setOrganRatio] = useState(initialOrganRatio);
-  const [lastEdited, setLastEdited] = useState('organ');
-  const [activeBar, setActiveBar] = useState(null);
+type RootStackParamList = {
+  FoodInputScreen: undefined;
+  FoodInfoScreen: { ingredient: Ingredient; editMode: boolean };
+  SearchScreen: undefined;
+  CalculatorScreen: { meat: number; bone: number; organ: number };
+};
+
+type CalculatorScreenRouteProp = RouteProp<RootStackParamList, 'CalculatorScreen'>;
+
+const CalculatorScreen = () => {
+  const route = useRoute<CalculatorScreenRouteProp>();
+  const navigation = useNavigation();
+
+  const initialMeatWeight = route.params?.meat ?? 0;
+  const initialBoneWeight = route.params?.bone ?? 0;
+  const initialOrganWeight = route.params?.organ ?? 0;
+
+  const [newMeat, setNewMeat] = useState<number | null>(null);
+  const [newBone, setNewBone] = useState<number | null>(null);
+  const [newOrgan, setNewOrgan] = useState<number | null>(null);
+
+  const [meatCorrect, setMeatCorrect] = useState({ bone: 0, organ: 0 });
+  const [boneCorrect, setBoneCorrect] = useState({ meat: 0, organ: 0 });
+  const [organCorrect, setOrganCorrect] = useState({ meat: 0, bone: 0 });
 
   useEffect(() => {
-    setMeatRatio(initialMeatRatio);
-    setBoneRatio(initialBoneRatio);
-    setOrganRatio(initialOrganRatio);
-  }, [initialMeatRatio, initialBoneRatio, initialOrganRatio]);
-
-  const adjustRatios = (newMeat, newBone, newOrgan, changed) => {
-    let total = newMeat + newBone + newOrgan;
-
-    if (total === 100) {
-      setMeatRatio(newMeat);
-      setBoneRatio(newBone);
-      setOrganRatio(newOrgan);
-      return;
-    }
-
-    let excess = total - 100;
-
-    if (total > 100) {
-      switch (changed) {
-        case 'meat':
-          if (lastEdited === 'bone') {
-            newOrgan = Math.max(0, newOrgan - excess);
-            if (newOrgan === 0) newBone = Math.max(0, newBone - (excess - newOrgan));
-          } else {
-            newBone = Math.max(0, newBone - excess);
-            if (newBone === 0) newOrgan = Math.max(0, newOrgan - (excess - newBone));
-          }
-          break;
-        case 'bone':
-          if (lastEdited === 'meat') {
-            newOrgan = Math.max(0, newOrgan - excess);
-            if (newOrgan === 0) newMeat = Math.max(0, newMeat - (excess - newOrgan));
-          } else {
-            newMeat = Math.max(0, newMeat - excess);
-            if (newMeat === 0) newOrgan = Math.max(0, newOrgan - (excess - newMeat));
-          }
-          break;
-        case 'organ':
-          if (lastEdited === 'meat') {
-            newBone = Math.max(0, newBone - excess);
-            if (newBone === 0) newMeat = Math.max(0, newMeat - (excess - newBone));
-          } else {
-            newMeat = Math.max(0, newMeat - excess);
-            if (newMeat === 0) newBone = Math.max(0, newBone - (excess - newMeat));
-          }
-          break;
-        default:
-          break;
+    const loadRatios = async () => {
+      try {
+        const savedMeat = await AsyncStorage.getItem('meatRatio');
+        const savedBone = await AsyncStorage.getItem('boneRatio');
+        const savedOrgan = await AsyncStorage.getItem('organRatio');
+        if (savedMeat !== null) setNewMeat(Number(savedMeat));
+        else setNewMeat(80);  // Default if not found
+        if (savedBone !== null) setNewBone(Number(savedBone));
+        else setNewBone(10);  // Default if not found
+        if (savedOrgan !== null) setNewOrgan(Number(savedOrgan));
+        else setNewOrgan(10);  // Default if not found
+      } catch (error) {
+        console.log('Failed to load ratios:', error);
+        setNewMeat(80);
+        setNewBone(10);
+        setNewOrgan(10);
       }
-    } else if (total < 100) {
-      const shortage = 100 - total;
-
-      switch (changed) {
-        case 'meat':
-          if (lastEdited === 'bone') {
-            newOrgan = Math.min(100, newOrgan + shortage);
-          } else {
-            newBone = Math.min(100, newBone + shortage);
-          }
-          break;
-        case 'bone':
-          if (lastEdited === 'meat') {
-            newOrgan = Math.min(100, newOrgan + shortage);
-          } else {
-            newMeat = Math.min(100, newMeat + shortage);
-          }
-          break;
-        case 'organ':
-          if (lastEdited === 'meat') {
-            newBone = Math.min(100, newBone + shortage);
-          } else {
-            newMeat = Math.min(100, newMeat + shortage);
-          }
-          break;
-        default:
-          break;
-      }
-    }
-
-    setMeatRatio(newMeat);
-    setBoneRatio(newBone);
-    setOrganRatio(newOrgan);
-  };
-
-  const handleMeatChange = (value) => {
-    const newMeatRatio = Math.min(100, Math.max(0, parseInt(value) || 0));
-    setLastEdited('meat');
-    adjustRatios(newMeatRatio, boneRatio, organRatio, 'meat');
-  };
-
-  const handleBoneChange = (value) => {
-    const newBoneRatio = Math.min(100, Math.max(0, parseInt(value) || 0));
-    setLastEdited('bone');
-    adjustRatios(meatRatio, newBoneRatio, organRatio, 'bone');
-  };
-
-  const handleOrganChange = (value) => {
-    const newOrganRatio = Math.min(100, Math.max(0, parseInt(value) || 0));
-    setLastEdited('organ');
-    adjustRatios(meatRatio, boneRatio, newOrganRatio, 'organ');
-  };
-
-  const handleInfoPress = () => {
-    Alert.alert('Corrector Information', 'Add your explanation here...');
-  };
-
-  const calculateCorrection = (correctMeat, correctBone, correctOrgan) => {
-    // Calculate actual weights
-    const currentMeatWeight = (totalWeight * meatRatio) / 100;
-    const currentBoneWeight = (totalWeight * boneRatio) / 100;
-    const currentOrganWeight = (totalWeight * organRatio) / 100;
-
-    const desiredMeatWeight = (totalWeight * correctMeat) / 100;
-    const desiredBoneWeight = (totalWeight * correctBone) / 100;
-    const desiredOrganWeight = (totalWeight * correctOrgan) / 100;
-
-    return {
-      meatCorrection: desiredMeatWeight - currentMeatWeight,
-      boneCorrection: desiredBoneWeight - currentBoneWeight,
-      organCorrection: desiredOrganWeight - currentOrganWeight,
     };
+    loadRatios();
+  }, []);
+
+  useEffect(() => {
+    if (newMeat !== null && newBone !== null && newOrgan !== null) {
+      const saveRatios = async () => {
+        try {
+          await AsyncStorage.setItem('meatRatio', newMeat.toString());
+          await AsyncStorage.setItem('boneRatio', newBone.toString());
+          await AsyncStorage.setItem('organRatio', newOrgan.toString());
+        } catch (error) {
+          console.log('Failed to save ratios:', error);
+        }
+      };
+      saveRatios();
+      calculateCorrectors(initialMeatWeight, initialBoneWeight, initialOrganWeight);
+    }
+  }, [newMeat, newBone, newOrgan]);
+
+  const calculateCorrectors = (meatWeight: number, boneWeight: number, organWeight: number) => {
+    if (meatWeight > 0) {
+      const bone = ((meatWeight / (newMeat || 1)) * (newBone || 0)) - boneWeight;
+      const organ = ((meatWeight / (newMeat || 1)) * (newOrgan || 0)) - organWeight;
+      setMeatCorrect({ bone: isNaN(bone) ? 0 : bone, organ: isNaN(organ) ? 0 : organ });
+    } else {
+      setMeatCorrect({ bone: 0, organ: 0 });
+    }
+
+    if (boneWeight > 0) {
+      const meat = ((boneWeight / (newBone || 1)) * (newMeat || 0)) - meatWeight;
+      const organ = ((boneWeight / (newBone || 1)) * (newOrgan || 0)) - organWeight;
+      setBoneCorrect({ meat: isNaN(meat) ? 0 : meat, organ: isNaN(organ) ? 0 : organ });
+    } else {
+      setBoneCorrect({ meat: 0, organ: 0 });
+    }
+
+    if (organWeight > 0) {
+      const meat = ((organWeight / (newOrgan || 1)) * (newMeat || 0)) - meatWeight;
+      const bone = ((organWeight / (newOrgan || 1)) * (newBone || 0)) - boneWeight;
+      setOrganCorrect({ meat: isNaN(meat) ? 0 : meat, bone: isNaN(bone) ? 0 : bone });
+    } else {
+      setOrganCorrect({ meat: 0, bone: 0 });
+    }
   };
 
-  // Calculate corrections based on each ratio being the correct one
-  const meatCorrect = calculateCorrection(80, 10, 10); // Assume meat is correct
-  const boneCorrect = calculateCorrection(80, 10, 10); // Assume bone is correct
-  const organCorrect = calculateCorrection(80, 10, 10); // Assume organ is correct
+  const adjustRatios = (meat: number, bone: number, organ: number) => {
+    const total = meat + bone + organ;
+    if (total > 100) {
+      const scale = 100 / total;
+      meat = Math.round(meat * scale);
+      bone = Math.round(bone * scale);
+      organ = Math.round(organ * scale);
+    }
+
+    setNewMeat(meat);
+    setNewBone(bone);
+    setNewOrgan(organ);
+  };
+
+  const handleMeatChange = (text: string) => {
+    const meat = Math.min(Number(text), 100);
+    adjustRatios(meat, newBone || 0, newOrgan || 0);
+  };
+
+  const handleBoneChange = (text: string) => {
+    const bone = Math.min(Number(text), 100);
+    adjustRatios(newMeat || 0, bone, newOrgan || 0);
+  };
+
+  const handleOrganChange = (text: string) => {
+    const organ = Math.min(Number(text), 100);
+    adjustRatios(newMeat || 0, newBone || 0, organ);
+  };
+
+  const showInfoAlert = () => {
+    Alert.alert(
+      "Corrector Info",
+      "The corrector values help you achieve the intended ratio. Adjust these values to match your desired meat, bone, and organ distribution.",
+      [{ text: "OK" }]
+    );
+  };
+
+  if (newMeat === null || newBone === null || newOrgan === null) {
+    return null; // You can return a loading spinner here if needed
+  }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Set your meat: bone: organ ratio:</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+      <View style={styles.container}>
+        <View style={styles.topBar}>
+        </View>
 
-      <View style={styles.ratioBarContainer}>
-        <TouchableOpacity
-          style={[styles.ratioBar, { backgroundColor: '#FF6347', flex: meatRatio / 100 }]}
-          onPressIn={() => setActiveBar('meat')}
-          onPressOut={() => setActiveBar(null)}
-        />
-        <TouchableOpacity
-          style={[styles.ratioBar, { backgroundColor: '#FFD700', flex: boneRatio / 100 }]}
-          onPressIn={() => setActiveBar('bone')}
-          onPressOut={() => setActiveBar(null)}
-        />
-        <TouchableOpacity
-          style={[styles.ratioBar, { backgroundColor: '#6A5ACD', flex: organRatio / 100 }]}
-          onPressIn={() => setActiveBar('organ')}
-          onPressOut={() => setActiveBar(null)}
-        />
-      </View>
+        <Text style={styles.ratioTitle}>Set your Meat:Bone:Organ ratio:</Text>
+        <View style={styles.barContainer}>
+          <View style={[styles.barSegment, { backgroundColor: '#FF6347', flex: newMeat }]} />
+          <View style={[styles.barSegment, { backgroundColor: '#D3D3D3', flex: newBone }]} />
+          <View style={[styles.barSegment, { backgroundColor: '#FFB6C1', flex: newOrgan }]} />
+        </View>
 
-      {activeBar && (
-        <View style={styles.popupContainer}>
-          <View style={styles.popup}>
-            <Text>{activeBar.charAt(0).toUpperCase() + activeBar.slice(1)}</Text>
-            <View style={styles.pointer} />
+        <View style={styles.ratioInputContainer}>
+          <View style={styles.ratioInputRow}>
+            <View style={styles.inputLabelContainer}>
+              <Text style={styles.inputLabel}>Meat</Text>
+              <TextInput
+                style={styles.ratioInput}
+                value={String(newMeat)}
+                onChangeText={handleMeatChange}
+                keyboardType="numeric"
+              />
+            </View>
+            <View style={styles.inputLabelContainer}>
+              <Text style={styles.inputLabel}>Bone</Text>
+              <TextInput
+                style={styles.ratioInput}
+                value={String(newBone)}
+                onChangeText={handleBoneChange}
+                keyboardType="numeric"
+              />
+            </View>
+            <View style={styles.inputLabelContainer}>
+              <Text style={styles.inputLabel}>Organ</Text>
+              <TextInput
+                style={styles.ratioInput}
+                value={String(newOrgan)}
+                onChangeText={handleOrganChange}
+                keyboardType="numeric"
+              />
+            </View>
           </View>
         </View>
-      )}
 
-      <View style={styles.inputRow}>
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Meat</Text>
-          <TextInput
-            style={styles.input}
-            keyboardType="numeric"
-            value={meatRatio.toString()}
-            onChangeText={handleMeatChange}
-          />
+        <View style={styles.correctorInfoContainer}>
+          <Text style={styles.correctorInfoText}>Use the corrector to achieve the intended ratio</Text>
+          <TouchableOpacity onPress={showInfoAlert}>
+            <FontAwesome name="info-circle" size={24} color="green" />
+          </TouchableOpacity>
         </View>
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Bone</Text>
-          <TextInput
-            style={styles.input}
-            keyboardType="numeric"
-            value={boneRatio.toString()}
-            onChangeText={handleBoneChange}
-          />
-        </View>
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Organ</Text>
-          <TextInput
-            style={styles.input}
-            keyboardType="numeric"
-            value={organRatio.toString()}
-            onChangeText={handleOrganChange}
-          />
-        </View>
-      </View>
 
-      <View style={styles.infoContainer}>
-        <Text style={styles.infoText}>Use the corrector to achieve the intended ratio.</Text>
-        <TouchableOpacity onPress={handleInfoPress}>
-          <View style={styles.infoIconContainer}>
-            <Text style={styles.infoIcon}>i</Text>
+        <View style={styles.correctorContainer}>
+          <View style={styles.correctorBox}>
+            <Text style={styles.correctorTitle}>Meat Correct</Text>
+            <Text>Bone: {meatCorrect.bone.toFixed(2)} g</Text>
+            <Text>Organ: {meatCorrect.organ.toFixed(2)} g</Text>
           </View>
-        </TouchableOpacity>
-      </View>
 
-      <View style={styles.correctorContainer}>
-        <Text style={styles.correctorTitle}>Meat Correct</Text>
-        <Text>Bone: {meatCorrect.boneCorrection.toFixed(2)} g</Text>
-        <Text>Organ: {meatCorrect.organCorrection.toFixed(2)} g</Text>
-      </View>
+          <View style={styles.correctorBox}>
+            <Text style={styles.correctorTitle}>Bone Correct</Text>
+            <Text>Meat: {boneCorrect.meat.toFixed(2)} g</Text>
+            <Text>Organ: {boneCorrect.organ.toFixed(2)} g</Text>
+          </View>
 
-      <View style={styles.correctorContainer}>
-        <Text style={styles.correctorTitle}>Bone Correct</Text>
-        <Text>Meat: {boneCorrect.meatCorrection.toFixed(2)} g</Text>
-        <Text>Organ: {boneCorrect.organCorrection.toFixed(2)} g</Text>
+          <View style={styles.correctorBox}>
+            <Text style={styles.correctorTitle}>Organ Correct</Text>
+            <Text>Meat: {organCorrect.meat.toFixed(2)} g</Text>
+            <Text>Bone: {organCorrect.bone.toFixed(2)} g</Text>
+          </View>
+        </View>
       </View>
-
-      <View style={styles.correctorContainer}>
-        <Text style={styles.correctorTitle}>Organ Correct</Text>
-        <Text>Meat: {organCorrect.meatCorrection.toFixed(2)} g</Text>
-        <Text>Bone: {organCorrect.boneCorrection.toFixed(2)} g</Text>
-      </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: 'white',
+  },
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#fff',
   },
-  title: {
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  ratioTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'left',
+    marginBottom: 10,
   },
-  ratioBarContainer: {
+  barContainer: {
     flexDirection: 'row',
-    height: 60,
-    marginVertical: 15,
-    backgroundColor: '#F0F0F0',
+    height: 70,
+    marginVertical: 20,
+    borderRadius: 5,
+    overflow: 'hidden',
   },
-  ratioBar: {
+  barSegment: {
     height: '100%',
   },
-  popupContainer: {
-    position: 'absolute',
-    top: 80,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
+  ratioInputContainer: {
+    marginVertical: 20,
   },
-  popup: {
-    padding: 10,
-    backgroundColor: '#FFF',
-    borderRadius: 5,
-    borderColor: '#000',
-    borderWidth: 1,
-  },
-  pointer: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 10,
-    borderRightWidth: 10,
-    borderBottomWidth: 10,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderBottomColor: '#FFF',
-    position: 'absolute',
-    bottom: -10,
-    left: '50%',
-    marginLeft: -10,
-  },
-  inputRow: {
+  ratioInputRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  inputContainer: {
-    flex: 1,
+  inputLabelContainer: {
     alignItems: 'center',
+    width: '30%',
   },
   inputLabel: {
+    fontSize: 18,
+    fontWeight: 'semibold',
+    marginBottom: 5,
+  },
+  ratioInput: {
+    borderBottomWidth: 1,
+    borderColor: '#ccc',
+    padding: 5,
     fontSize: 16,
-    marginBottom: 0,
     textAlign: 'center',
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#CCCCCC',
-    padding: 10,
-    borderRadius: 5,
-    width: '60%',
-    textAlign: 'center',
-  },
-  infoContainer: {
+  correctorInfoContainer: {
     flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 20,
+    marginVertical: 20,
   },
-  infoText: {
+  correctorInfoText: {
     fontSize: 18,
     fontWeight: 'bold',
     color: 'black',
-    textAlign: 'left',
-  },
-  infoIconContainer: {
-    marginLeft: 5,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#84DD06',
-    width: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  infoIcon: {
-    color: '#84DD06',
-    fontSize: 14,
-    fontWeight: 'bold',
+    marginRight: 5,
   },
   correctorContainer: {
-    marginTop: 10,
-    padding: 15,
-    borderWidth: 1,
+    marginVertical: 10,
+  },
+  correctorBox: {
+    borderWidth: 2,
     borderColor: '#84DD06',
     borderRadius: 5,
+    padding: 10,
+    marginVertical: 5,
   },
   correctorTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 5,
+    color: 'black',
   },
 });
 

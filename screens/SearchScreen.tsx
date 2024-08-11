@@ -2,6 +2,13 @@ import React, { useState } from 'react';
 import { View, TextInput, FlatList, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+
+type RootStackParamList = {
+  FoodInfoScreen: { ingredient: { id: string; name: string; meat: number; bone: number; organ: number } };
+};
+
+type SearchScreenNavigationProp = StackNavigationProp<RootStackParamList, 'FoodInfoScreen'>;
 
 const SearchScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -88,14 +95,14 @@ const SearchScreen = () => {
     
   ]);
 
-  const navigation = useNavigation();
+  const navigation = useNavigation<SearchScreenNavigationProp>();
 
   const filteredIngredients = ingredients.filter(ingredient =>
     ingredient.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handlePressIngredient = (ingredient: { id: string; name: string; meat: number; bone: number; organ: number; }) => {
-    navigation.navigate('FoodInfoScreen', { ingredient });
+  const handlePressIngredient = (ingredient: { id: string; name: string; meat: number; bone: number; organ: number }) => {
+    navigation.navigate('FoodInfoScreen', { ingredient, editMode: false });
   };
 
   return (
@@ -113,7 +120,6 @@ const SearchScreen = () => {
         ListEmptyComponent={() => <Text style={styles.emptyText}>No ingredients found</Text>}
         style={styles.ingredientList}
       />
-
       <View style={styles.searchBarContainer}>
         <TextInput
           style={styles.searchBar}
@@ -167,7 +173,6 @@ const styles = StyleSheet.create({
     padding: 10,
     borderWidth: 1,
     borderColor: '#ccc',
-
     borderRadius: 5,
   },
   searchIcon: {
