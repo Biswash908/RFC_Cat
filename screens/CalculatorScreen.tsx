@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, TextInput, SafeAreaView, Stat
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { FontAwesome } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useUnit } from '../UnitContext';  // Import useUnit
 
 type RootStackParamList = {
   FoodInputScreen: undefined;
@@ -20,6 +21,8 @@ const CalculatorScreen = () => {
   const initialMeatWeight = route.params?.meat ?? 0;
   const initialBoneWeight = route.params?.bone ?? 0;
   const initialOrganWeight = route.params?.organ ?? 0;
+
+  const { unit } = useUnit();  // Use the weight unit from the context
 
   const [newMeat, setNewMeat] = useState<number | null>(null);
   const [newBone, setNewBone] = useState<number | null>(null);
@@ -130,6 +133,11 @@ const CalculatorScreen = () => {
     );
   };
 
+  const formatWeight = (value: number) => {
+    const formattedValue = value.toFixed(2);
+    return `${value >= 0 ? '+' : ''}${formattedValue} ${unit}`;
+  };
+
   if (newMeat === null || newBone === null || newOrgan === null) {
     return null; // You can return a loading spinner here if needed
   }
@@ -188,22 +196,20 @@ const CalculatorScreen = () => {
         </View>
 
         <View style={styles.correctorContainer}>
-          <View style={styles.correctorBox}>
-            <Text style={styles.correctorTitle}>Meat Correct</Text>
-            <Text>Bone: {meatCorrect.bone.toFixed(2)} g</Text>
-            <Text>Organ: {meatCorrect.organ.toFixed(2)} g</Text>
+          <View style={[styles.correctorBox, styles.meatCorrector]}>
+            <Text style={styles.correctorTitle}>Meat Corrector</Text>
+            <Text style={styles.correctorText}>Bone: {formatWeight(meatCorrect.bone)}</Text>
+            <Text style={styles.correctorText}>Organ: {formatWeight(meatCorrect.organ)}</Text>
           </View>
-
-          <View style={styles.correctorBox}>
-            <Text style={styles.correctorTitle}>Bone Correct</Text>
-            <Text>Meat: {boneCorrect.meat.toFixed(2)} g</Text>
-            <Text>Organ: {boneCorrect.organ.toFixed(2)} g</Text>
+          <View style={[styles.correctorBox, styles.boneCorrector]}>
+            <Text style={styles.correctorTitle}>Bone Corrector</Text>
+            <Text style={styles.correctorText}>Meat: {formatWeight(boneCorrect.meat)}</Text>
+            <Text style={styles.correctorText}>Organ: {formatWeight(boneCorrect.organ)}</Text>
           </View>
-
-          <View style={styles.correctorBox}>
-            <Text style={styles.correctorTitle}>Organ Correct</Text>
-            <Text>Meat: {organCorrect.meat.toFixed(2)} g</Text>
-            <Text>Bone: {organCorrect.bone.toFixed(2)} g</Text>
+          <View style={[styles.correctorBox, styles.organCorrector]}>
+            <Text style={styles.correctorTitle}>Organ Corrector</Text>
+            <Text style={styles.correctorText}>Meat: {formatWeight(organCorrect.meat)}</Text>
+            <Text style={styles.correctorText}>Bone: {formatWeight(organCorrect.bone)}</Text>
           </View>
         </View>
       </View>
@@ -214,27 +220,25 @@ const CalculatorScreen = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: '#FFF',
   },
   container: {
     flex: 1,
-    padding: 20,
+    padding: 16,
   },
   topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 16,
   },
   ratioTitle: {
     fontSize: 18,
     fontWeight: 'bold',
+    marginBottom: 16,
     textAlign: 'left',
-    marginBottom: 10,
   },
   barContainer: {
     flexDirection: 'row',
-    height: 70,
-    marginVertical: 20,
+    height: 60,
+    marginBottom: 16,
     borderRadius: 5,
     overflow: 'hidden',
   },
@@ -242,55 +246,67 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   ratioInputContainer: {
-    marginVertical: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
   },
   ratioInputRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    width: '100%',
   },
   inputLabelContainer: {
+    flex: 1,
     alignItems: 'center',
-    width: '30%',
   },
   inputLabel: {
-    fontSize: 18,
-    fontWeight: 'semibold',
-    marginBottom: 5,
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
   },
   ratioInput: {
-    borderBottomWidth: 1,
+    borderWidth: 1,
     borderColor: '#ccc',
-    padding: 5,
-    fontSize: 16,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
     textAlign: 'center',
+    fontSize: 16,
+    width: 60,
   },
   correctorInfoContainer: {
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
-    marginVertical: 20,
+    justifyContent: 'center',
+    marginBottom: 8,
   },
   correctorInfoText: {
     fontSize: 18,
-    fontWeight: 'bold',
     color: 'black',
-    marginRight: 5,
+    fontWeight: 'bold',
+    marginRight: 10,
+    marginLeft: 10,
   },
   correctorContainer: {
-    marginVertical: 10,
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    marginTop: 16,
   },
   correctorBox: {
+    padding: 16,
+    borderRadius: 8,
+    backgroundColor: 'transparent',
+    marginBottom: 16,
     borderWidth: 2,
     borderColor: '#84DD06',
-    borderRadius: 5,
-    padding: 10,
-    marginVertical: 5,
   },
   correctorTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 5,
-    color: 'black',
+    marginBottom: 8,
+  },
+  correctorText: {
+    fontSize: 14,
   },
 });
 

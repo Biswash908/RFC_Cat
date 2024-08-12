@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, SafeAreaView, StatusBar } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { FontAwesome } from '@expo/vector-icons';
+import { useUnit } from '../UnitContext';  // Import the UnitContext
 
-type Ingredient = {
+export type Ingredient = {
   name: string;
   meatWeight: number;
   boneWeight: number;
@@ -11,7 +12,7 @@ type Ingredient = {
   totalWeight: number;
 };
 
-type RootStackParamList = {
+export type RootStackParamList = {
   FoodInputScreen: undefined;
   FoodInfoScreen: { ingredient: Ingredient; editMode: boolean };
   SearchScreen: undefined;
@@ -20,9 +21,10 @@ type RootStackParamList = {
 
 type FoodInputScreenRouteProp = RouteProp<RootStackParamList, 'FoodInfoScreen'>;
 
-const FoodInputScreen = () => {
+const FoodInputScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute<FoodInputScreenRouteProp>();
+  const { unit } = useUnit();  // Get the current unit from the context
 
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [totalMeat, setTotalMeat] = useState(0);
@@ -76,6 +78,18 @@ const FoodInputScreen = () => {
     );
   };
 
+  // Helper function to format the weight based on the selected unit
+  const formatWeight = (weight: number) => {
+    switch (unit) {
+      case 'kg':
+        return (weight).toFixed(2) + ' kg';
+      case 'lbs':
+        return (weight).toFixed(2) + ' lbs';
+      default:
+        return weight.toFixed(2) + ' g';
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
@@ -93,12 +107,12 @@ const FoodInputScreen = () => {
 
         <View style={styles.totalBar}>
           <Text style={styles.totalText}>
-            Total: {totalWeight.toFixed(2)} g
+            Total: {formatWeight(totalWeight)}
           </Text>
           <Text style={styles.subTotalText}>
-            Meat: {totalMeat.toFixed(2)} g ({(totalMeat / totalWeight * 100).toFixed(2)}%) | 
-            Bone: {totalBone.toFixed(2)} g ({(totalBone / totalWeight * 100).toFixed(2)}%) | 
-            Organ: {totalOrgan.toFixed(2)} g ({(totalOrgan / totalWeight * 100).toFixed(2)}%)
+            Meat: {formatWeight(totalMeat)} ({(totalMeat / totalWeight * 100).toFixed(2)}%) | 
+            Bone: {formatWeight(totalBone)} ({(totalBone / totalWeight * 100).toFixed(2)}%) | 
+            Organ: {formatWeight(totalOrgan)} ({(totalOrgan / totalWeight * 100).toFixed(2)}%)
           </Text>
         </View>
 
@@ -111,9 +125,9 @@ const FoodInputScreen = () => {
                 <View style={styles.ingredientInfo}>
                   <Text style={styles.ingredientText}>{ingredient.name}</Text>
                   <Text style={styles.ingredientDetails}>
-                    M: {ingredient.meatWeight.toFixed(2)} g  B: {ingredient.boneWeight.toFixed(2)} g  O: {ingredient.organWeight.toFixed(2)} g
+                    M: {formatWeight(ingredient.meatWeight)}  B: {formatWeight(ingredient.boneWeight)}  O: {formatWeight(ingredient.organWeight)}
                   </Text>
-                  <Text style={styles.totalWeightText}>Total: {ingredient.totalWeight.toFixed(2)} g</Text>
+                  <Text style={styles.totalWeightText}>Total: {formatWeight(ingredient.totalWeight)}</Text>
                 </View>
                 <View style={styles.iconsContainer}>
                   <TouchableOpacity
@@ -196,7 +210,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   subTotalText: {
-    fontSize: 14,
+    fontSize: 16,
     color: 'black',
   },
   ingredientList: {

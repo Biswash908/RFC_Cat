@@ -2,13 +2,6 @@ import React, { useState } from 'react';
 import { View, TextInput, FlatList, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-
-type RootStackParamList = {
-  FoodInfoScreen: { ingredient: { id: string; name: string; meat: number; bone: number; organ: number } };
-};
-
-type SearchScreenNavigationProp = StackNavigationProp<RootStackParamList, 'FoodInfoScreen'>;
 
 const SearchScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -91,17 +84,18 @@ const SearchScreen = () => {
     { id: '76', name: 'Unbalanced Premade 94/3/3', meat: 94, bone: 3, organ: 3 },
     { id: '77', name: 'Unbalanced Premade 85/10/5', meat: 85, bone: 10, organ: 5 },
     { id: '78', name: 'Veal Heart', meat: 100, bone: 0, organ: 0 },
-    { id: '79', name: 'Veal Kidney', meat: 0, bone: 0, organ: 100 },
+    { id: '79', name: 'Veal Kidney', meat: 0, bone: 0, organ: 100 }
+    
   ]);
 
-  const navigation = useNavigation<SearchScreenNavigationProp>();
+  const navigation = useNavigation();
 
   const filteredIngredients = ingredients.filter(ingredient =>
     ingredient.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handlePressIngredient = (ingredient: { id: string; name: string; meat: number; bone: number; organ: number }) => {
-    navigation.navigate('FoodInfoScreen', { ingredient, editMode: false });
+  const handlePressIngredient = (ingredient: { id: string; name: string; meat: number; bone: number; organ: number; }) => {
+    navigation.navigate('FoodInfoScreen', { ingredient });
   };
 
   return (
@@ -119,6 +113,7 @@ const SearchScreen = () => {
         ListEmptyComponent={() => <Text style={styles.emptyText}>No ingredients found</Text>}
         style={styles.ingredientList}
       />
+
       <View style={styles.searchBarContainer}>
         <TextInput
           style={styles.searchBar}
@@ -172,6 +167,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderWidth: 1,
     borderColor: '#ccc',
+
     borderRadius: 5,
   },
   searchIcon: {

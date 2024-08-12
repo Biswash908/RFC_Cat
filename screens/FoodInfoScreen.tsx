@@ -3,6 +3,7 @@ import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-nativ
 import { Picker } from '@react-native-picker/picker';
 import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { useUnit } from '../UnitContext';  // Import the custom hook
 
 type RootStackParamList = {
   FoodInfoScreen: { ingredient: { id: string; name: string; meat: number; bone: number; organ: number; weight?: number }, editMode: boolean };
@@ -18,16 +19,16 @@ type Props = {
 };
 
 const FoodInfoScreen = ({ route, navigation }: Props) => {
+  const { unit, setUnit } = useUnit();  // Use the custom hook here
   const { ingredient, editMode } = route.params;
   const [weight, setWeight] = useState(ingredient.weight ? ingredient.weight.toString() : '');
-  const [unit, setUnit] = useState<'g' | 'kg' | 'lbs'>('g');
 
   const convertWeight = (weight: number) => {
     switch (unit) {
       case 'kg':
-        return weight / 1000;
+        return weight;
       case 'lbs':
-        return weight / 453.592;
+        return weight;
       default:
         return weight;
     }
@@ -39,7 +40,7 @@ const FoodInfoScreen = ({ route, navigation }: Props) => {
   };
 
   const handleSaveIngredient = () => {
-    const weightInGrams = unit === 'g' ? parseFloat(weight) : unit === 'kg' ? parseFloat(weight) * 1000 : parseFloat(weight) * 453.592;
+    const weightInGrams = unit === 'g' ? parseFloat(weight) : unit === 'kg' ? parseFloat(weight) : parseFloat(weight);
     const meatWeight = calculateWeight(ingredient.meat);
     const boneWeight = calculateWeight(ingredient.bone);
     const organWeight = calculateWeight(ingredient.organ);
