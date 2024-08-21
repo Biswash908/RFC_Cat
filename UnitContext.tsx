@@ -1,17 +1,14 @@
-// UnitContext.tsx
 import React, { createContext, useState, useContext } from 'react';
 
-type Unit = 'g' | 'kg' | 'lbs';
+type UnitContextType = {
+  unit: 'g' | 'kg' | 'lbs';
+  setUnit: (unit: 'g' | 'kg' | 'lbs') => void;
+};
 
-interface UnitContextProps {
-  unit: Unit;
-  setUnit: (unit: Unit) => void;
-}
+const UnitContext = createContext<UnitContextType | undefined>(undefined);
 
-const UnitContext = createContext<UnitContextProps | undefined>(undefined);
-
-export const UnitProvider: React.FC = ({ children }) => {
-  const [unit, setUnit] = useState<Unit>('g');
+export const UnitProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [unit, setUnit] = useState<'g' | 'kg' | 'lbs'>('g');
 
   return (
     <UnitContext.Provider value={{ unit, setUnit }}>
@@ -20,7 +17,7 @@ export const UnitProvider: React.FC = ({ children }) => {
   );
 };
 
-export const useUnit = (): UnitContextProps => {
+export const useUnit = () => {
   const context = useContext(UnitContext);
   if (!context) {
     throw new Error('useUnit must be used within a UnitProvider');

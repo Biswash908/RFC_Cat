@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, SafeAreaView, StatusBar } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { FontAwesome } from '@expo/vector-icons';
-import { useUnit } from '../UnitContext';  // Import the UnitContext
+import { MaterialIcons } from '@expo/vector-icons';
+import { useUnit } from '../UnitContext';
 
 export type Ingredient = {
   name: string;
@@ -10,6 +11,7 @@ export type Ingredient = {
   boneWeight: number;
   organWeight: number;
   totalWeight: number;
+  unit: 'g' | 'kg' | 'lbs';
 };
 
 export type RootStackParamList = {
@@ -24,7 +26,7 @@ type FoodInputScreenRouteProp = RouteProp<RootStackParamList, 'FoodInfoScreen'>;
 const FoodInputScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute<FoodInputScreenRouteProp>();
-  const { unit } = useUnit();  // Get the current unit from the context
+  const { unit: globalUnit } = useUnit();
 
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [totalMeat, setTotalMeat] = useState(0);
@@ -33,8 +35,10 @@ const FoodInputScreen: React.FC = () => {
   const [totalWeight, setTotalWeight] = useState(0);
 
   useEffect(() => {
-    if (route.params?.updatedIngredient) {
-      const newIngredient = route.params.updatedIngredient;
+    const newIngredient = route.params?.updatedIngredient;
+    if (newIngredient) {
+      newIngredient.unit = newIngredient.unit || globalUnit;
+
       const existingIngredientIndex = ingredients.findIndex(ing => ing.name === newIngredient.name);
 
       let updatedIngredients;
@@ -51,11 +55,31 @@ const FoodInputScreen: React.FC = () => {
     }
   }, [route.params?.updatedIngredient]);
 
+  const convertToUnit = (weight: number, fromUnit: 'g' | 'kg' | 'lbs', toUnit: 'g' | 'kg' | 'lbs') => {
+    if (fromUnit === toUnit) return weight;
+    switch (fromUnit) {
+      case 'g':
+        return toUnit === 'kg' ? weight / 1000 : weight / 453.592;
+      case 'kg':
+        return toUnit === 'g' ? weight * 1000 : weight * 2.20462;
+      case 'lbs':
+        return toUnit === 'g' ? weight * 453.592 : weight / 2.20462;
+    }
+  };
+
   const calculateTotals = (updatedIngredients: Ingredient[]) => {
-    const totalWt = updatedIngredients.reduce((sum, ing) => sum + ing.totalWeight, 0);
-    const meatWeight = updatedIngredients.reduce((sum, ing) => sum + ing.meatWeight, 0);
-    const boneWeight = updatedIngredients.reduce((sum, ing) => sum + ing.boneWeight, 0);
-    const organWeight = updatedIngredients.reduce((sum, ing) => sum + ing.organWeight, 0);
+    const totalWt = updatedIngredients.reduce((sum, ing) =>
+      sum + convertToUnit(ing.totalWeight, ing.unit, globalUnit), 0
+    );
+    const meatWeight = updatedIngredients.reduce((sum, ing) =>
+      sum + convertToUnit(ing.meatWeight, ing.unit, globalUnit), 0
+    );
+    const boneWeight = updatedIngredients.reduce((sum, ing) =>
+      sum + convertToUnit(ing.boneWeight, ing.unit, globalUnit), 0
+    );
+    const organWeight = updatedIngredients.reduce((sum, ing) =>
+      sum + convertToUnit(ing.organWeight, ing.unit, globalUnit), 0
+    );
 
     setTotalWeight(totalWt);
     setTotalMeat(meatWeight);
@@ -78,45 +102,27 @@ const FoodInputScreen: React.FC = () => {
     );
   };
 
-  // Helper function to format the weight based on the selected unit
-  const formatWeight = (weight: number) => {
-    switch (unit) {
-      case 'kg':
-        return (weight).toFixed(2) + ' kg';
-      case 'lbs':
-        return (weight).toFixed(2) + ' lbs';
-      default:
-        return weight.toFixed(2) + ' g';
-    }
+  const formatWeight = (weight: number, weightUnit: 'g' | 'kg' | 'lbs') => {
+    return weight.toFixed(2) + ' ' + weightUnit;
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
       <View style={styles.container}>
-        <View style={styles.topBar}>
-          <Text style={styles.topBarText}>Raw Feeding Calculator</Text>
-        </View>
-
-        <View style={styles.ingredientsInputBar}>
-          <Text style={styles.ingredientsInputText}>Ingredients Input</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('SearchScreen')}>
-            <FontAwesome name="search" size={24} color="black" />
-          </TouchableOpacity>
-        </View>
 
         <View style={styles.totalBar}>
           <Text style={styles.totalText}>
-            Total: {formatWeight(totalWeight)}
+            Total: {formatWeight(isNaN(totalWeight) ? 0 : totalWeight, globalUnit)}
           </Text>
           <Text style={styles.subTotalText}>
-            Meat: {formatWeight(totalMeat)} ({(totalMeat / totalWeight * 100).toFixed(2)}%) | 
-            Bone: {formatWeight(totalBone)} ({(totalBone / totalWeight * 100).toFixed(2)}%) | 
-            Organ: {formatWeight(totalOrgan)} ({(totalOrgan / totalWeight * 100).toFixed(2)}%)
+            Meat: {formatWeight(totalMeat, globalUnit)} ({totalWeight > 0 ? (totalMeat / totalWeight * 100).toFixed(2) : 0}%) | 
+            Bone: {formatWeight(totalBone, globalUnit)} ({totalWeight > 0 ? (totalBone / totalWeight * 100).toFixed(2) : 0}%) | 
+            Organ: {formatWeight(totalOrgan, globalUnit)} ({totalWeight > 0 ? (totalOrgan / totalWeight * 100).toFixed(2) : 0}%)
           </Text>
         </View>
 
-        <ScrollView style={styles.ingredientList}>
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
           {ingredients.length === 0 ? (
             <Text style={styles.noIngredientsText}>No ingredients added yet</Text>
           ) : (
@@ -125,15 +131,17 @@ const FoodInputScreen: React.FC = () => {
                 <View style={styles.ingredientInfo}>
                   <Text style={styles.ingredientText}>{ingredient.name}</Text>
                   <Text style={styles.ingredientDetails}>
-                    M: {formatWeight(ingredient.meatWeight)}  B: {formatWeight(ingredient.boneWeight)}  O: {formatWeight(ingredient.organWeight)}
+                    M: {formatWeight(ingredient.meatWeight, ingredient.unit)}  B: {formatWeight(ingredient.boneWeight, ingredient.unit)}  O: {formatWeight(ingredient.organWeight, ingredient.unit)}
                   </Text>
-                  <Text style={styles.totalWeightText}>Total: {formatWeight(ingredient.totalWeight)}</Text>
+                  <Text style={styles.totalWeightText}>Total: {formatWeight(isNaN(ingredient.totalWeight) ? 0 : ingredient.totalWeight, ingredient.unit)}</Text>
                 </View>
                 <View style={styles.iconsContainer}>
                   <TouchableOpacity
                     style={styles.editButton}
-                    onPress={() => navigation.navigate('FoodInfoScreen', { ingredient, editMode: true })}
-                  >
+                    onPress={() => navigation.navigate('FoodInfoScreen', {
+                      ingredient: { ...ingredient, unit: ingredient.unit }, // Pass the current unit
+                      editMode: true
+                    })}>
                     <FontAwesome name="edit" size={24} color="black" />
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -148,29 +156,24 @@ const FoodInputScreen: React.FC = () => {
           )}
         </ScrollView>
 
-        <TouchableOpacity
-          style={styles.calculateButton}
-          onPress={() =>
-            navigation.navigate('CalculatorScreen', { meat: totalMeat, bone: totalBone, organ: totalOrgan })}>
-          <Text style={styles.calculateButtonText}>Calculate</Text>
-        </TouchableOpacity>
-
-        <View style={styles.bottomNav}>
-          <TouchableOpacity>
-            <FontAwesome name="list" size={24} color="white" />
+        <View style={styles.calculateButtonContainer}>
+          <TouchableOpacity
+            style={styles.ingredientButton}
+            onPress={() => navigation.navigate('SearchScreen')}>
+            <Text style={styles.ingredientButtonText}>Add Ingredients</Text>
           </TouchableOpacity>
-          <TouchableOpacity>
-            <FontAwesome name="home" size={24} color="white" />
-          </TouchableOpacity>
-          <TouchableOpacity>
-            <FontAwesome name="plus" size={24} color="white" />
+          
+          <TouchableOpacity
+            style={styles.calculateButton}
+            onPress={() =>
+              navigation.navigate('CalculatorScreen', { meat: totalMeat, bone: totalBone, organ: totalOrgan })}>
+            <Text style={styles.calculateButtonText}>Calculate</Text>
           </TouchableOpacity>
         </View>
       </View>
     </SafeAreaView>
   );
 };
-
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -178,10 +181,11 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+    backgroundColor: 'transparent', // Ensure the parent container has a transparent background
   },
   topBar: {
-    backgroundColor: '#84DD06',
-    paddingVertical: 20,
+    backgroundColor: '#000080',
+    paddingVertical: 25,
     alignItems: 'center',
   },
   topBarText: {
@@ -189,100 +193,117 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
   },
-  ingredientsInputBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 15,
-    borderBottomWidth: 1,
-    borderColor: '#ccc',
-  },
-  ingredientsInputText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
   totalBar: {
     padding: 10,
     borderBottomWidth: 1,
-    borderColor: '#ccc',
+    borderBottomColor: '#ded8d7',
+    backgroundColor: 'white',
   },
   totalText: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: 'bold',
+    color: 'black',
   },
   subTotalText: {
     fontSize: 16,
     color: 'black',
   },
-  ingredientList: {
-    flex: 1,
+  scrollContainer: {
+    padding: 10,
+    paddingBottom: 5, // Extra space for bottom navigation bar
   },
   noIngredientsText: {
+    fontSize: 18,
+    color: 'gray',
     textAlign: 'center',
-    fontSize: 16,
-    color: '#777',
-    marginTop: 20,
+    marginTop: 50,
   },
   ingredientItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: 15,
-    borderBottomWidth: 1,
-    borderColor: '#ccc',
+    alignItems: 'center',
     marginBottom: 10,
+    padding: 10,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 5,
   },
   ingredientInfo: {
     flex: 1,
   },
   ingredientText: {
-    fontSize: 16,
-    marginBottom: 5,
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: 'black',
   },
   ingredientDetails: {
-    fontSize: 14,
-    color: '#555',
+    fontSize: 16,
+    color: '#404040',
+    marginVertical: 5,
   },
   totalWeightText: {
-    fontSize: 14,
-    color: '#555',
+    fontSize: 16,
+    color: '#404040',
   },
   iconsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginLeft: 10,
   },
   editButton: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    marginRight: 20,
   },
   deleteButton: {
-    justifyContent: 'center',
+    padding: 5,
+  },
+  calculateButtonContainer: {
+    padding: 20,
+    borderTopWidth: 0.7,
+    borderTopColor: '#ded8d7',
+    backgroundColor: 'white',
+    paddingBottom: 10,
+  },
+  ingredientButton: {
+    backgroundColor: '#000080',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    marginBottom: 20,
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+  },
+  ingredientButtonText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: 'white',
   },
   calculateButton: {
-    backgroundColor: '#84DD06',
-    borderRadius: 15,
-    marginHorizontal: 50,
-    paddingVertical: 18,
-    marginBottom: 40,
+    backgroundColor: '#000080',
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    marginBottom: 10,
+    alignItems: 'center',
   },
   calculateButtonText: {
-    textAlign: 'center',
-    color: 'white',
-    fontWeight: 'bold',
     fontSize: 18,
+    fontWeight: 'bold',
+    color: 'white',
   },
-  bottomNav: {
+  bottomBar: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    padding: 15,
-    backgroundColor: '#84DD06',
+    alignItems: 'center',
+    backgroundColor: '#000080',
+    paddingVertical: 5,
   },
-  bottomNavText: {
+  bottomBarItem: {
+    alignItems: 'center',
+
+  },
+  bottomBarText: {
+    fontSize: 14,
     color: 'white',
     fontWeight: 'bold',
+    marginTop: 1,
   },
 });
 

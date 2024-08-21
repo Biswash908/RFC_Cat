@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, SafeAreaView, StatusBar, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, SafeAreaView, StatusBar, Alert, Platform, KeyboardAvoidingView } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { FontAwesome } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useUnit } from '../UnitContext';  // Import useUnit
+import { useUnit } from '../UnitContext';
 
 type RootStackParamList = {
   FoodInputScreen: undefined;
@@ -18,19 +18,28 @@ const CalculatorScreen = () => {
   const route = useRoute<CalculatorScreenRouteProp>();
   const navigation = useNavigation();
 
+  const [ratioInfoVisible, setRatioInfoVisible] = useState(false);
+  const [correctorInfoVisible, setCorrectorInfoVisible] = useState(false);
+
   const initialMeatWeight = route.params?.meat ?? 0;
   const initialBoneWeight = route.params?.bone ?? 0;
   const initialOrganWeight = route.params?.organ ?? 0;
 
-  const { unit } = useUnit();  // Use the weight unit from the context
+  const { unit } = useUnit();
 
-  const [newMeat, setNewMeat] = useState<number | null>(null);
-  const [newBone, setNewBone] = useState<number | null>(null);
-  const [newOrgan, setNewOrgan] = useState<number | null>(null);
+  const [newMeat, setNewMeat] = useState<number | null>(80);
+  const [newBone, setNewBone] = useState<number | null>(10);
+  const [newOrgan, setNewOrgan] = useState<number | null>(10);
+
+  const [selectedRatio, setSelectedRatio] = useState<string>('80:10:10');
 
   const [meatCorrect, setMeatCorrect] = useState({ bone: 0, organ: 0 });
   const [boneCorrect, setBoneCorrect] = useState({ meat: 0, organ: 0 });
   const [organCorrect, setOrganCorrect] = useState({ meat: 0, bone: 0 });
+
+  useEffect(() => {
+    navigation.setOptions({ title: 'Calculator' });
+  }, [navigation]);
 
   useEffect(() => {
     const loadRatios = async () => {
@@ -38,12 +47,19 @@ const CalculatorScreen = () => {
         const savedMeat = await AsyncStorage.getItem('meatRatio');
         const savedBone = await AsyncStorage.getItem('boneRatio');
         const savedOrgan = await AsyncStorage.getItem('organRatio');
+        const savedRatio = await AsyncStorage.getItem('selectedRatio');
+        
         if (savedMeat !== null) setNewMeat(Number(savedMeat));
         else setNewMeat(80);  // Default if not found
+        
         if (savedBone !== null) setNewBone(Number(savedBone));
         else setNewBone(10);  // Default if not found
+        
         if (savedOrgan !== null) setNewOrgan(Number(savedOrgan));
         else setNewOrgan(10);  // Default if not found
+        
+        if (savedRatio !== null) setSelectedRatio(savedRatio);
+        else setSelectedRatio('80:10:10');  // Default if not found
       } catch (error) {
         console.log('Failed to load ratios:', error);
         setNewMeat(80);
@@ -61,6 +77,7 @@ const CalculatorScreen = () => {
           await AsyncStorage.setItem('meatRatio', newMeat.toString());
           await AsyncStorage.setItem('boneRatio', newBone.toString());
           await AsyncStorage.setItem('organRatio', newOrgan.toString());
+          await AsyncStorage.setItem('selectedRatio', selectedRatio);
         } catch (error) {
           console.log('Failed to save ratios:', error);
         }
@@ -68,7 +85,7 @@ const CalculatorScreen = () => {
       saveRatios();
       calculateCorrectors(initialMeatWeight, initialBoneWeight, initialOrganWeight);
     }
-  }, [newMeat, newBone, newOrgan]);
+  }, [newMeat, newBone, newOrgan, selectedRatio]);
 
   const calculateCorrectors = (meatWeight: number, boneWeight: number, organWeight: number) => {
     if (meatWeight > 0) {
@@ -96,33 +113,21 @@ const CalculatorScreen = () => {
     }
   };
 
-  const adjustRatios = (meat: number, bone: number, organ: number) => {
-    const total = meat + bone + organ;
-    if (total > 100) {
-      const scale = 100 / total;
-      meat = Math.round(meat * scale);
-      bone = Math.round(bone * scale);
-      organ = Math.round(organ * scale);
-    }
-
+  const setRatio = (meat: number, bone: number, organ: number, ratio: string) => {
     setNewMeat(meat);
     setNewBone(bone);
     setNewOrgan(organ);
+    setSelectedRatio(ratio);
   };
 
-  const handleMeatChange = (text: string) => {
-    const meat = Math.min(Number(text), 100);
-    adjustRatios(meat, newBone || 0, newOrgan || 0);
-  };
-
-  const handleBoneChange = (text: string) => {
-    const bone = Math.min(Number(text), 100);
-    adjustRatios(newMeat || 0, bone, newOrgan || 0);
-  };
-
-  const handleOrganChange = (text: string) => {
-    const organ = Math.min(Number(text), 100);
-    adjustRatios(newMeat || 0, newBone || 0, organ);
+  const showRatioInfoAlert = () => {
+    Alert.alert(
+      "Ratio Info",
+      "• Adult cats: 80% meat, 10% bone, 10% secreting organs\n\n"+
+      "• Kittens and pregnant/nursing cats: 75% meat, 15% bone, 10% secreting organs\n\n"+
+      "The higher bone content for kittens and mothers provides essential calcium for growth and lactation.",
+      [{ text: "OK" }]
+    );
   };
 
   const showInfoAlert = () => {
@@ -132,87 +137,85 @@ const CalculatorScreen = () => {
       [{ text: "OK" }]
     );
   };
+  
 
-  const formatWeight = (value: number) => {
-    const formattedValue = value.toFixed(2);
-    return `${value >= 0 ? '+' : ''}${formattedValue} ${unit}`;
+  const formatWeight = (value: number, ingredient: string) => {
+    const formattedValue = Math.abs(value).toFixed(2);
+    const action = value >= 0 ? 'Add' : 'Remove';
+    return `${action} ${formattedValue} ${unit} of ${ingredient}`;
   };
-
-  if (newMeat === null || newBone === null || newOrgan === null) {
-    return null; // You can return a loading spinner here if needed
-  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
-      <View style={styles.container}>
-        <View style={styles.topBar}>
-        </View>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.container}>
+        <View style={styles.topBar} />
 
-        <Text style={styles.ratioTitle}>Set your Meat:Bone:Organ ratio:</Text>
-        <View style={styles.barContainer}>
-          <View style={[styles.barSegment, { backgroundColor: '#FF6347', flex: newMeat }]} />
-          <View style={[styles.barSegment, { backgroundColor: '#D3D3D3', flex: newBone }]} />
-          <View style={[styles.barSegment, { backgroundColor: '#FFB6C1', flex: newOrgan }]} />
+        <View style={styles.ratioTitleContainer}>
+          <Text style={styles.ratioTitle}>Set your Meat: Bone: Organ ratio:</Text>
+          <TouchableOpacity onPress={showRatioInfoAlert} style={styles.infoIcon}>
+            <FontAwesome name="info-circle" size={20} color="#000080" />
+          </TouchableOpacity>
         </View>
-
-        <View style={styles.ratioInputContainer}>
-          <View style={styles.ratioInputRow}>
-            <View style={styles.inputLabelContainer}>
-              <Text style={styles.inputLabel}>Meat</Text>
-              <TextInput
-                style={styles.ratioInput}
-                value={String(newMeat)}
-                onChangeText={handleMeatChange}
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={styles.inputLabelContainer}>
-              <Text style={styles.inputLabel}>Bone</Text>
-              <TextInput
-                style={styles.ratioInput}
-                value={String(newBone)}
-                onChangeText={handleBoneChange}
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={styles.inputLabelContainer}>
-              <Text style={styles.inputLabel}>Organ</Text>
-              <TextInput
-                style={styles.ratioInput}
-                value={String(newOrgan)}
-                onChangeText={handleOrganChange}
-                keyboardType="numeric"
-              />
-            </View>
-          </View>
+        <View style={styles.ratioButtonsContainer}>
+          <TouchableOpacity
+            style={[
+              styles.ratioButton,
+              selectedRatio === '80:10:10' && styles.selectedRatioButton,
+            ]}
+            onPress={() => setRatio(80, 10, 10, '80:10:10')}>
+            <Text
+              style={[
+                styles.ratioButtonText,
+                selectedRatio === '80:10:10' && { color: 'white' }
+              ]}
+            >
+              80:10:10
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.ratioButton,
+              selectedRatio === '75:15:10' && styles.selectedRatioButton,
+            ]}
+            onPress={() => setRatio(75, 15, 10, '75:15:10')}
+          >
+            <Text
+              style={[
+                styles.ratioButtonText,
+                selectedRatio === '75:15:10' && { color: 'white' }
+              ]}
+            >
+              75:15:10
+            </Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.correctorInfoContainer}>
-          <Text style={styles.correctorInfoText}>Use the corrector to achieve the intended ratio</Text>
-          <TouchableOpacity onPress={showInfoAlert}>
-            <FontAwesome name="info-circle" size={24} color="green" />
+          <Text style={styles.correctorInfoText}>Use the corrector to achieve the intended ratio:</Text>
+          <TouchableOpacity onPress={showInfoAlert} style={styles.infoIcon}>
+            <FontAwesome name="info-circle" size={20} color="#000080" />
           </TouchableOpacity>
         </View>
 
         <View style={styles.correctorContainer}>
           <View style={[styles.correctorBox, styles.meatCorrector]}>
-            <Text style={styles.correctorTitle}>Meat Corrector</Text>
-            <Text style={styles.correctorText}>Bone: {formatWeight(meatCorrect.bone)}</Text>
-            <Text style={styles.correctorText}>Organ: {formatWeight(meatCorrect.organ)}</Text>
+            <Text style={styles.correctorTitle}>If Meat is correct</Text>
+            <Text style={styles.correctorText}>{formatWeight(meatCorrect.bone, 'bones')}</Text>
+            <Text style={styles.correctorText}>{formatWeight(meatCorrect.organ, 'organs')}</Text>
           </View>
           <View style={[styles.correctorBox, styles.boneCorrector]}>
-            <Text style={styles.correctorTitle}>Bone Corrector</Text>
-            <Text style={styles.correctorText}>Meat: {formatWeight(boneCorrect.meat)}</Text>
-            <Text style={styles.correctorText}>Organ: {formatWeight(boneCorrect.organ)}</Text>
+            <Text style={styles.correctorTitle}>If Bone is correct</Text>
+            <Text style={styles.correctorText}>{formatWeight(boneCorrect.meat, 'meat')}</Text>
+            <Text style={styles.correctorText}>{formatWeight(boneCorrect.organ, 'organs')}</Text>
           </View>
           <View style={[styles.correctorBox, styles.organCorrector]}>
-            <Text style={styles.correctorTitle}>Organ Corrector</Text>
-            <Text style={styles.correctorText}>Meat: {formatWeight(organCorrect.meat)}</Text>
-            <Text style={styles.correctorText}>Bone: {formatWeight(organCorrect.bone)}</Text>
+            <Text style={styles.correctorTitle}>If Organ is correct</Text>
+            <Text style={styles.correctorText}>{formatWeight(organCorrect.meat, 'meat')}</Text>
+            <Text style={styles.correctorText}>{formatWeight(organCorrect.bone, 'bones')}</Text>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -232,60 +235,52 @@ const styles = StyleSheet.create({
   ratioTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 16,
     textAlign: 'left',
+    flex: 1, // Allow title to take up available space
   },
-  barContainer: {
-    flexDirection: 'row',
-    height: 60,
-    marginBottom: 16,
-    borderRadius: 5,
-    overflow: 'hidden',
-  },
-  barSegment: {
-    height: '100%',
-  },
-  ratioInputContainer: {
+  ratioTitleContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  ratioInputRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
-  inputLabelContainer: {
-    flex: 1,
     alignItems: 'center',
+    marginBottom: 16,
   },
-  inputLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 8,
+  infoIcon: {
+    marginRight: 1,
   },
-  ratioInput: {
+  ratioButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 16,
+  },
+  ratioButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ccc',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    textAlign: 'center',
+    backgroundColor: 'white',
+    borderColor: 'blue',
+  },
+  selectedRatioButton: {
+    backgroundColor: '#000080',
+    borderColor: 'green',
+  },
+  ratioButtonText: {
     fontSize: 16,
-    width: 60,
+    fontWeight: '600',
+    color: 'black',
+
   },
   correctorInfoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
+    justifyContent: 'space-between',
+    marginBottom: 4,
   },
   correctorInfoText: {
     fontSize: 18,
     color: 'black',
     fontWeight: 'bold',
-    marginRight: 10,
-    marginLeft: 10,
+    flex: 1, // Allow text to take up available space
   },
   correctorContainer: {
     flexDirection: 'column',
@@ -298,7 +293,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     marginBottom: 16,
     borderWidth: 2,
-    borderColor: '#84DD06',
+    borderColor: '#4747f5',
   },
   correctorTitle: {
     fontSize: 16,

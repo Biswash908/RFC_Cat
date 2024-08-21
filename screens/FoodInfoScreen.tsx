@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { useUnit } from '../UnitContext';  // Import the custom hook
+import { useUnit } from '../UnitContext';
 
 type RootStackParamList = {
-  FoodInfoScreen: { ingredient: { id: string; name: string; meat: number; bone: number; organ: number; weight?: number }, editMode: boolean };
-  FoodInputScreen: { updatedIngredient: { id: string; name: string; meat: number; bone: number; organ: number; weight: number; meatWeight: number; boneWeight: number; organWeight: number; totalWeight: number } };
+  FoodInfoScreen: { ingredient: { id: string; name: string; meat: number; bone: number; organ: number; weight?: number, unit: 'g' | 'kg' | 'lbs' }, editMode: boolean };
+  FoodInputScreen: { updatedIngredient: { id: string; name: string; meat: number; bone: number; organ: number; weight: number; meatWeight: number; boneWeight: number; organWeight: number; totalWeight: number, unit: 'g' | 'kg' | 'lbs' } };
 };
 
 type FoodInfoScreenRouteProp = RouteProp<RootStackParamList, 'FoodInfoScreen'>;
@@ -19,12 +18,13 @@ type Props = {
 };
 
 const FoodInfoScreen = ({ route, navigation }: Props) => {
-  const { unit, setUnit } = useUnit();  // Use the custom hook here
+  const { setUnit } = useUnit();
   const { ingredient, editMode } = route.params;
   const [weight, setWeight] = useState(ingredient.weight ? ingredient.weight.toString() : '');
+  const [selectedUnit, setSelectedUnit] = useState<'g' | 'kg' | 'lbs'>(ingredient.unit || 'g');  // Default to 'g' if unit is undefined
 
   const convertWeight = (weight: number) => {
-    switch (unit) {
+    switch (selectedUnit) {
       case 'kg':
         return weight;
       case 'lbs':
@@ -40,7 +40,7 @@ const FoodInfoScreen = ({ route, navigation }: Props) => {
   };
 
   const handleSaveIngredient = () => {
-    const weightInGrams = unit === 'g' ? parseFloat(weight) : unit === 'kg' ? parseFloat(weight) : parseFloat(weight);
+    const weightInGrams = parseFloat(weight);
     const meatWeight = calculateWeight(ingredient.meat);
     const boneWeight = calculateWeight(ingredient.bone);
     const organWeight = calculateWeight(ingredient.organ);
@@ -53,45 +53,62 @@ const FoodInfoScreen = ({ route, navigation }: Props) => {
       boneWeight,
       organWeight,
       totalWeight,
+      unit: selectedUnit,
     };
 
-    navigation.navigate('FoodInputScreen', { updatedIngredient });
-  };
+    setUnit(selectedUnit);
+
+    // Navigate to FoodInputScreen within HomeTabs
+    navigation.navigate('HomeTabs', { 
+        screen: 'Home', // 'Home' here refers to the FoodInputScreen in your Tab Navigator
+        params: { updatedIngredient } 
+    });
+};
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{ingredient.name}</Text>
-      <View style={styles.underline} />
-      <TextInput
-        style={styles.input}
-        placeholder={`Enter ingredient weight in ${unit}`}
-        keyboardType="numeric"
-        value={weight}
-        onChangeText={setWeight}
-      />
-      <Picker
-        selectedValue={unit}
-        style={styles.picker}
-        onValueChange={(itemValue) => setUnit(itemValue as 'g' | 'kg' | 'lbs')}
-      >
-        <Picker.Item label="Grams (g)" value="g" />
-        <Picker.Item label="Kilograms (kg)" value="kg" />
-        <Picker.Item label="Pounds (lbs)" value="lbs" />
-      </Picker>
-      <View style={styles.resultContainer}>
-        <Text style={styles.resultText}>Meat: {ingredient.meat}% - {convertWeight(calculateWeight(ingredient.meat)).toFixed(2)} {unit}</Text>
-        <Text style={styles.resultText}>Bone: {ingredient.bone}% - {convertWeight(calculateWeight(ingredient.bone)).toFixed(2)} {unit}</Text>
-        <Text style={styles.resultText}>Organ: {ingredient.organ}% - {convertWeight(calculateWeight(ingredient.organ)).toFixed(2)} {unit}</Text>
-      </View>
-      <TouchableOpacity
-        style={styles.button}
-        onPress={handleSaveIngredient}
-      >
-        <Text style={styles.buttonText}>
-          {editMode ? "Save Ingredient" : "Add Ingredient"}
-        </Text>
-      </TouchableOpacity>
-    </View>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.title}>{ingredient.name}</Text>
+        <View style={styles.underline} />
+        <TextInput
+          style={styles.input}
+          placeholder={`Enter ingredient weight in ${selectedUnit}`}  // Correct placeholder text
+          keyboardType="numeric"
+          value={weight}
+          onChangeText={setWeight}
+        />
+        <View style={styles.buttonContainer}>
+          {['g', 'kg', 'lbs'].map((item) => (
+            <TouchableOpacity
+              key={item}
+              style={[
+                styles.unitButton,
+                selectedUnit === item ? styles.activeUnitButton : styles.inactiveUnitButton,
+              ]}
+              onPress={() => setSelectedUnit(item as 'g' | 'kg' | 'lbs')}
+            >
+              <Text style={styles.unitButtonText}>{item}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <View style={styles.resultContainer}>
+          <Text style={styles.resultText}>Meat: {ingredient.meat}% - {convertWeight(calculateWeight(ingredient.meat)).toFixed(2)} {selectedUnit}</Text>
+          <Text style={styles.resultText}>Bone: {ingredient.bone}% - {convertWeight(calculateWeight(ingredient.bone)).toFixed(2)} {selectedUnit}</Text>
+          <Text style={styles.resultText}>Organ: {ingredient.organ}% - {convertWeight(calculateWeight(ingredient.organ)).toFixed(2)} {selectedUnit}</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={handleSaveIngredient}
+        >
+          <Text style={styles.buttonText}>
+            {editMode ? "Save Ingredient" : "Add Ingredient"}
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -116,23 +133,40 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     borderRadius: 5,
     padding: 10,
-    marginTop: 20,
+    marginTop: 15,
   },
-  picker: {
-    height: 50,
-    width: '100%',
-    marginTop: 20,
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 15,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+  },
+  unitButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 25,
+    borderRadius: 5,
+  },
+  activeUnitButton: {
+    backgroundColor: '#000080',
+  },
+  inactiveUnitButton: {
+    backgroundColor: '#ccc',
+  },
+  unitButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
   resultContainer: {
-    marginTop: 30,
+    marginTop: 15,
   },
   resultText: {
     fontSize: 18,
     marginVertical: 5,
   },
   button: {
-    marginTop: 40,
-    backgroundColor: '#84DD06',
+    marginTop: 20,
+    backgroundColor: '#000080',
     paddingVertical: 15,
     borderRadius: 10,
     alignItems: 'center',
