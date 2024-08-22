@@ -143,12 +143,12 @@ const App: React.FC = () => {
           <Stack.Screen 
             name="FAQScreen" 
             component={FAQScreen}
-            options={{ title: 'FAQs' }} 
+            options={{ title: 'App FAQs' }} 
           />
           <Stack.Screen 
             name="RawFeedingFAQScreen" 
             component={RawFeedingFAQScreen}
-            options={{title: 'RawFeedingFAQs'}}
+            options={{title: 'Raw Feeding FAQs'}}
             />
         </Stack.Navigator>
       </NavigationContainer>

@@ -4,20 +4,12 @@ import { View, Text, StyleSheet, SafeAreaView, ScrollView, StatusBar } from 'rea
 const RawFeedingFAQScreen = () => {
   const rawFeedingFaqs = [
     {
-      question: 'What is the Prey Model Raw (PMR) diet?',
-      answer: 'The PMR diet mimics a cat’s natural diet in the wild, consisting of 84% muscle meat, 6% raw edible bones, 5% liver, and 5% other organs.',
-    },
-    {
-      question: 'Why does the PMR diet exclude vegetables and fruits?',
+      question: 'Why does the raw feeding diet exclude vegetables and fruits?',
       answer: 'Cats are obligate carnivores, meaning they thrive on a diet of animal-based proteins and fats. Vegetables and fruits can stress their digestive system and are not naturally part of their diet.',
     },
     {
-      question: 'What is the difference between whole prey and frankenprey?',
-      answer: 'Whole prey involves feeding entire animals (e.g., rabbits, quail), while frankenprey combines different animal parts to achieve the correct PMR ratios.',
-    },
-    {
       question: 'How do I transition my cat to a raw feeding diet?',
-      answer: 'Start by introducing small amounts of raw food alongside their current diet, gradually increasing the raw food ratio over time. Ensure to follow PMR guidelines.',
+      answer: 'Start by introducing small amounts of raw food alongside their current diet, gradually increasing the raw food ratio over time.',
     },
     {
       question: 'What are the benefits of feeding whole prey?',
@@ -37,7 +29,7 @@ const RawFeedingFAQScreen = () => {
     },
     {
       question: 'How do I know if my cat’s raw diet is nutritionally complete?',
-      answer: 'Follow the 84:6:5:5 PMR ratio for muscle meat, raw edible bones, liver, and other organs. Providing a variety of proteins helps ensure a complete nutrient profile.',
+      answer: 'Follow the 80:10:10 ratio for meat, raw edible bones, and organs. Providing a variety of proteins helps ensure a complete nutrient profile.',
     },
     {
       question: 'What should I do if my cat refuses to eat raw food?',
