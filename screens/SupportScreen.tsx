@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, StatusBar, TouchableOpacity, Linking } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons'; // Import FontAwesome for the headphones icon
+import { FontAwesome } from '@expo/vector-icons';
 
 const SupportScreen = () => {
   const handleEmailPress = () => {
@@ -17,18 +17,15 @@ const SupportScreen = () => {
       <View style={styles.container}>
 
         <View style={styles.headerContainer}>
-          <FontAwesome name="headphones" size={64} color="#1252b8" />
+            <FontAwesome name="headphones" size={64} color="#1252b8" />
           <Text style={styles.contactText}>Contact Us</Text>
         </View>
 
         <TouchableOpacity style={styles.listItem} onPress={handleEmailPress}>
-          <FontAwesome name="envelope" size={24} color="#000080" style={styles.icon} />
+          <View style={styles.iconContainer}>
+            <FontAwesome name="envelope" size={24} color="#000080" style={styles.icon} />
+          </View>
           <Text style={styles.listItemText}>Send us an Email</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.listItem} onPress={handleFaqsPress}>
-          <FontAwesome name="question-circle" size={24} color="#000080" style={styles.icon} />
-          <Text style={styles.listItemText}>FAQs</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -64,6 +61,11 @@ const styles = StyleSheet.create({
   },
   icon: {
     marginRight: 12,
+  },
+  iconContainer: {
+    width: 38,
+    alignItems:'center',
+    justifyContent: 'center',
   },
   listItemText: {
     fontSize: 18,

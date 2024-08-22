@@ -35,8 +35,8 @@ const HomeTabs = () => {
             iconName = 'home';
             label = 'Home';
           } else if (route.name === 'Settings') {
-            iconName = 'settings';
-            label = 'Settings';
+            iconName = 'info';
+            label = 'Info';
           } else if (route.name === 'Support') {
             iconName = 'headset';
             label = 'Support';
@@ -46,10 +46,10 @@ const HomeTabs = () => {
             <View style={{ alignItems: 'center' }}>
               <MaterialIcons
                 name={iconName}
-                size={focused ? 40 : 30}
-                color={focused ? 'white' : 'grey'}
+                size={30}
+                color={'white'}
               />
-              <Text style={{ color: focused ? 'white' : 'grey', fontSize: 12 }}>
+              <Text style={{ color : 'white', fontSize: 12 }}>
                 {label}
               </Text>
             </View>

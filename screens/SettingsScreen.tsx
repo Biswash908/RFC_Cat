@@ -8,7 +8,7 @@ const SettingsScreen = ({ navigation }) => {
   };
 
   useLayoutEffect(() => {
-    navigation.setOptions({ title: 'Settings' });
+    navigation.setOptions({ title: 'Info' });
   }, [navigation]);
 
   return (
@@ -16,19 +16,22 @@ const SettingsScreen = ({ navigation }) => {
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
       <View style={styles.container}>
         <TouchableOpacity style={styles.listItem} onPress={() => openLink('http://makethingsunlimited.com/terms-and-conditions/')}>
-          <FontAwesome name="file-text-o" size={24} color="#000080" style={styles.icon} />
+          <View style={styles.iconContainer}>
+            <FontAwesome name="file-text-o" size={24} color="#000080" style={styles.icon} />
+          </View>
           <Text style={styles.listItemText}>Terms and Conditions</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.listItem} onPress={() => openLink('http://makethingsunlimited.com/privacy-policy/')}>
-          <FontAwesome name="lock" size={24} color="#000080" style={styles.icon} />
+          <View style={styles.iconContainer}>
+            <FontAwesome name="lock" size={24} color="#000080" style={styles.icon} />
+          </View>
           <Text style={styles.listItemText}>Privacy Policy</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
 };
-
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -52,6 +55,11 @@ const styles = StyleSheet.create({
   listItemText: {
     fontSize: 18,
     color: 'black',
+  },
+  iconContainer: {
+    width: 33, // Set a consistent width for the icon container
+    alignItems: 'center',
+    justifyContent: 'center', // Center the icon vertically and horizontally
   },
   bottomBar: {
     flexDirection: 'row',
