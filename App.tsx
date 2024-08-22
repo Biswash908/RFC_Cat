@@ -10,7 +10,8 @@ import SearchScreen from './screens/SearchScreen';
 import CalculatorScreen from './screens/CalculatorScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import SupportScreen from './screens/SupportScreen';
-import FAQScreen from './screens/FAQScreen'; // Import the FAQScreen
+import FAQScreen from './screens/FAQScreen';
+import RawFeedingFAQScreen from './screens/RawFeedingFAQScreen';
 import { UnitProvider } from './UnitContext';
 
 export type RootStackParamList = {
@@ -144,6 +145,11 @@ const App: React.FC = () => {
             component={FAQScreen}
             options={{ title: 'FAQs' }} 
           />
+          <Stack.Screen 
+            name="RawFeedingFAQScreen" 
+            component={RawFeedingFAQScreen}
+            options={{title: 'RawFeedingFAQs'}}
+            />
         </Stack.Navigator>
       </NavigationContainer>
     </UnitProvider>

@@ -43,23 +43,7 @@ const FAQScreen = () => {
       question: 'Can I save my feeding plans?',
       answer: 'No, you cannot save your feeding plans yet. It may be added in future updates.',
     },
-    {
-      question: 'How much should I feed my cats?',
-      answer: 'Kittens should be fed as much as they would eat (as they are still growing), ideally on a 75:15:10 ratio and adult cats should be fed 2-3% of their ideal body weight on a normal 80:10:10 ratio'
-    },
-    {
-      question: 'Are there any recipes for cats?',
-      answer: 'This is a simple recipe that makes about 1KG and can be easily scaled up (suitable for freezing) or down to suit. You don’t need a grinder for this recipe.\n\n' +
-      'Ingredients:\n' +
-      '– 215 grams of chicken wings with tips, cut at the joints*\n' +
-      '– 685 grams of any boneless meat except chicken breast or rabbit**, chunked or minced\n' +
-      '– 100 grams of any liver\n\n' +
-      'Instructions:\n' +
-      'Mix all ingredients together.\n' +
-      'The recipe is ready to serve!\n' +
-      'It can be kept for 2-3 days in the fridge to ensure freshness.\n\n' +
-      '** It’s not recommended to feed your cat chicken breast or rabbit, as they are both low in fat and taurine – an essential nutrient for your cat’s diet.'
-    },
+
     {
       question: 'How can I submit a feature suggestion or give feedback about the app?',
       answer: 'You can send an email to support@makethingsunlimited.com.',

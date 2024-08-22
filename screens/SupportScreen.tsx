@@ -10,8 +10,12 @@ const SupportScreen: React.FC = () => {
     Linking.openURL('mailto:support@makethingsunlimited.com');
   };
 
-  const handleFaqsPress = () => {
-    navigation.navigate('FAQScreen'); // Navigate to the FAQScreen
+  const handleAppFaqsPress = () => {
+    navigation.navigate('FAQScreen'); // Navigate to the App FAQs
+  };
+
+  const handleRawFeedingFaqsPress = () => {
+    navigation.navigate('RawFeedingFAQScreen'); // Navigate to the Raw Feeding FAQs
   };
 
   return (
@@ -30,11 +34,18 @@ const SupportScreen: React.FC = () => {
           <Text style={styles.listItemText}>Send us an Email</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.listItem} onPress={handleFaqsPress}>
+        <TouchableOpacity style={styles.listItem} onPress={handleAppFaqsPress}>
           <View style={styles.iconContainer}>
             <FontAwesome name="question-circle" size={24} color="#000080" style={styles.icon} />
           </View>
-          <Text style={styles.listItemText}>FAQs</Text>
+          <Text style={styles.listItemText}>App FAQs</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.listItem} onPress={handleRawFeedingFaqsPress}>
+          <View style={styles.iconContainer}>
+            <FontAwesome name="cutlery" size={24} color="#000080" style={styles.icon} />
+          </View>
+          <Text style={styles.listItemText}>Raw Feeding FAQs</Text>
         </TouchableOpacity>
 
       </View>
@@ -74,7 +85,7 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     width: 38,
-    alignItems:'center',
+    alignItems: 'center',
     justifyContent: 'center',
   },
   listItemText: {
