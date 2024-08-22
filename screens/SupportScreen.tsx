@@ -1,23 +1,25 @@
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, StatusBar, TouchableOpacity, Linking } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 
-const SupportScreen = () => {
+const SupportScreen: React.FC = () => {
+  const navigation = useNavigation();
+
   const handleEmailPress = () => {
-    Linking.openURL('mailto:support@example.com');
+    Linking.openURL('mailto:support@makethingsunlimited.com');
   };
 
   const handleFaqsPress = () => {
-    Linking.openURL('https://www.example.com/faqs');
+    navigation.navigate('FAQScreen'); // Navigate to the FAQScreen
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
       <View style={styles.container}>
-
         <View style={styles.headerContainer}>
-            <FontAwesome name="headphones" size={64} color="#1252b8" />
+          <FontAwesome name="headphones" size={64} color="#1252b8" />
           <Text style={styles.contactText}>Contact Us</Text>
         </View>
 
@@ -27,6 +29,14 @@ const SupportScreen = () => {
           </View>
           <Text style={styles.listItemText}>Send us an Email</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity style={styles.listItem} onPress={handleFaqsPress}>
+          <View style={styles.iconContainer}>
+            <FontAwesome name="question-circle" size={24} color="#000080" style={styles.icon} />
+          </View>
+          <Text style={styles.listItemText}>FAQs</Text>
+        </TouchableOpacity>
+
       </View>
     </SafeAreaView>
   );

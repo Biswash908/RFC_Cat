@@ -10,6 +10,7 @@ import SearchScreen from './screens/SearchScreen';
 import CalculatorScreen from './screens/CalculatorScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import SupportScreen from './screens/SupportScreen';
+import FAQScreen from './screens/FAQScreen'; // Import the FAQScreen
 import { UnitProvider } from './UnitContext';
 
 export type RootStackParamList = {
@@ -17,6 +18,7 @@ export type RootStackParamList = {
   FoodInfoScreen: { ingredient: Ingredient; editMode: boolean };
   SearchScreen: undefined;
   CalculatorScreen: { meat: number; bone: number; organ: number };
+  FAQScreen: undefined; // Add FAQScreen to the type definition
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -137,6 +139,11 @@ const App: React.FC = () => {
           <Stack.Screen name="CalculatorScreen" component={CalculatorScreen} />
           <Stack.Screen name="SettingsScreen" component={SettingsScreen} />
           <Stack.Screen name="SupportScreen" component={SupportScreen} />
+          <Stack.Screen 
+            name="FAQScreen" 
+            component={FAQScreen}
+            options={{ title: 'FAQs' }} 
+          />
         </Stack.Navigator>
       </NavigationContainer>
     </UnitProvider>
