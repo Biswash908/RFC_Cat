@@ -167,7 +167,7 @@ const FoodInputScreen: React.FC = () => {
             style={styles.calculateButton}
             onPress={() =>
               navigation.navigate('CalculatorScreen', { meat: totalMeat, bone: totalBone, organ: totalOrgan })}>
-            <Text style={styles.calculateButtonText}>Calculate</Text>
+            <Text style={styles.calculateButtonText}>Select Ratio & Calculate</Text>
           </TouchableOpacity>
         </View>
       </View>
