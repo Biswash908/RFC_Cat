@@ -10,9 +10,11 @@ import SearchScreen from './screens/SearchScreen';
 import CalculatorScreen from './screens/CalculatorScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import SupportScreen from './screens/SupportScreen';
+import CustomRatioScreen from './screens/CustomRatioScreen';
 import FAQScreen from './screens/FAQScreen';
 import RawFeedingFAQScreen from './screens/RawFeedingFAQScreen';
 import { UnitProvider } from './UnitContext';
+import { SaveProvider } from './SaveContext';
 import Svg, { Path } from 'react-native-svg';
 
 export type RootStackParamList = {
@@ -138,6 +140,7 @@ const HomeTabs = () => {
 const App: React.FC = () => {
   return (
     <UnitProvider>
+      <SaveProvider>
       <NavigationContainer>
         <Stack.Navigator initialRouteName="HomeTabs">
           <Stack.Screen
@@ -156,6 +159,7 @@ const App: React.FC = () => {
             options={{ title: 'Search Ingredients' }}
           />
           <Stack.Screen name="CalculatorScreen" component={CalculatorScreen} />
+          <Stack.Screen name="CustomRatioScreen" component={CustomRatioScreen} />
           <Stack.Screen name="SettingsScreen" component={SettingsScreen} />
           <Stack.Screen name="SupportScreen" component={SupportScreen} />
           <Stack.Screen 
@@ -170,6 +174,7 @@ const App: React.FC = () => {
             />
         </Stack.Navigator>
       </NavigationContainer>
+      </SaveProvider>
     </UnitProvider>
   );
 };

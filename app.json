@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "BatchPlanner",
-    "slug": "BatchPlanner",
-    "version": "1.0.0",
+    "name": "Raw Feeding Calc for Cats",
+    "slug": "make-things-unlimited-cat-calc",
+    "version": "1.0.3",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/Icon.png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash.png",
@@ -21,6 +21,8 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.MakeThingsUnlimited.CatCalc",
+      "versionCode": 4,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
@@ -28,6 +30,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "a859cd8e-eb5d-4fee-a935-8bb9bf5809bc"
+      }
     }
   }
 }
