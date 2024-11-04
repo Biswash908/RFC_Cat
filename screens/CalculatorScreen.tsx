@@ -49,6 +49,14 @@ const CalculatorScreen: React.FC = () => {
     navigation.setOptions({ title: 'Calculator' });
   }, [navigation]);
 
+  useEffect(() => {
+    //navigation.navigate('HomeTabs', { 
+      //screen: 'Home', 
+      //ratio: selectedRatio === 'custom' ? customRatio : { meat: newMeat, bone: newBone, organ: newOrgan },
+    //});
+  }, [selectedRatio, customRatio, newMeat, newBone, newOrgan, navigation]);
+  
+
   useFocusEffect(
     React.useCallback(() => {
       const loadRatios = async () => {
