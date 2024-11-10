@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, KeyboardAvoidingView, Platform, Modal, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -43,7 +43,6 @@ const RecipeScreen = ({ route }) => {
       ],
     },
   ];
-  
   
   const [recipes, setRecipes] = useState([]);
   const [newRecipeName, setNewRecipeName] = useState('');
@@ -112,6 +111,27 @@ const RecipeScreen = ({ route }) => {
       loadRecipes();
     }, [])
   );
+
+  const calculateRecipeRatio = (ingredients) => {
+    let totalMeat = 0;
+    let totalBone = 0;
+    let totalOrgan = 0;
+    let totalWeight = 0;
+  
+    ingredients.forEach((ingredient) => {
+      totalMeat += ingredient.meatWeight;
+      totalBone += ingredient.boneWeight;
+      totalOrgan += ingredient.organWeight;
+      totalWeight += ingredient.totalWeight;
+    });
+  
+    // Calculate the ratio as percentages
+    const meatRatio = totalWeight ? Math.round((totalMeat / totalWeight) * 100) : 0;
+    const boneRatio = totalWeight ? Math.round((totalBone / totalWeight) * 100) : 0;
+    const organRatio = totalWeight ? Math.round((totalOrgan / totalWeight) * 100) : 0;
+  
+    return `${meatRatio} M : ${boneRatio} B : ${organRatio} O`;
+  };
 
   useEffect(() => {
     const loadRecipes = async () => {
@@ -297,7 +317,9 @@ const RecipeScreen = ({ route }) => {
             >
               <View style={styles.recipeInfo}>
                 <Text style={styles.recipeText}>{recipe.name}</Text>
-                <Text style={styles.ingredientCount}>{recipe.ingredients.length} ingredients</Text>
+                <Text style={styles.ingredientCount}>{calculateRecipeRatio(recipe.ingredients)}</Text>
+              </View>
+              <View style={styles.iconsContainer}>
               </View>
               <View style={styles.iconsContainer}>
                 <TouchableOpacity style={styles.editButton} onPress={() => handleOpenEditModal(recipe)}>
