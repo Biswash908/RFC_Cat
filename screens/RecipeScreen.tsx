@@ -19,6 +19,7 @@ const RecipeScreen = ({ route }) => {
         { id: '1', name: 'Beef Heart', totalWeight: 150, meatWeight: 150, boneWeight: 0, organWeight: 0, meat: 100, bone: 0, organ: 0, unit: 'g' },
         { id: '4', name: 'Beef Ribs', totalWeight: 100, meatWeight: 48, boneWeight: 52, organWeight: 0, meat: 48, bone: 52, organ: 0, unit: 'g' },
       ],
+      ratio: '80:10:10' // Default ratio for Beef Mix
     },
     {
       id: 'default2',
@@ -30,6 +31,7 @@ const RecipeScreen = ({ route }) => {
         { id: '10', name: 'Chicken Breast boneless', totalWeight: 300, meatWeight: 300, boneWeight: 0, organWeight: 0, meat: 100, bone: 0, organ: 0, unit: 'g' },
         { id: '9', name: 'Chicken Back', totalWeight: 100, meatWeight: 50, boneWeight: 50, organWeight: 0, meat: 50, bone: 50, organ: 0, unit: 'g' },
       ],
+      ratio: '75:15:10' // Default ratio for Chicken Delight
     },
     {
       id: 'default3',
@@ -41,6 +43,7 @@ const RecipeScreen = ({ route }) => {
         { id: '41', name: 'Lamb Heart', totalWeight: 200, meatWeight: 200, boneWeight: 0, organWeight: 0, meat: 100, bone: 0, organ: 0, unit: 'g' },
         { id: '44', name: 'Lamb Loin', totalWeight: 150, meatWeight: 108, boneWeight: 42, organWeight: 0, meat: 72, bone: 28, organ: 0, unit: 'g' },
       ],
+      ratio: '65:25:10' // Default ratio for Lamb Feast
     },
   ];
   
@@ -91,23 +94,24 @@ const RecipeScreen = ({ route }) => {
         try {
           const storedRecipes = await AsyncStorage.getItem('recipes');
           let recipesToSet;
-  
+
           if (storedRecipes) {
             const parsedStoredRecipes = JSON.parse(storedRecipes);
-            // Merge with default recipes, avoiding duplicates based on ID
-            recipesToSet = [...defaultRecipes, ...parsedStoredRecipes.filter(r => !defaultRecipes.some(dr => dr.id === r.id))];
+            recipesToSet = [
+              ...defaultRecipes,
+              ...parsedStoredRecipes.filter(r => !defaultRecipes.some(dr => dr.id === r.id)),
+            ];
           } else {
-            // First load, set AsyncStorage with default recipes
             recipesToSet = defaultRecipes;
             await AsyncStorage.setItem('recipes', JSON.stringify(defaultRecipes));
           }
-  
+
           setRecipes(recipesToSet);
         } catch (error) {
           console.log('Error loading recipes: ', error);
         }
       };
-  
+
       loadRecipes();
     }, [])
   );
@@ -212,7 +216,7 @@ const RecipeScreen = ({ route }) => {
   
               // Navigate to FoodInputScreen within HomeTabs -> RecipeStack
               navigation.navigate('HomeTabs', {
-                screen: 'Home',  // Adjusted to match the name "Home" within HomeTabs
+                screen: 'Home',
                 params: {
                   recipeName: recipe.name,
                   recipeId: recipe.id,
@@ -306,7 +310,7 @@ const RecipeScreen = ({ route }) => {
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: 'white' }}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {recipes.length === 0 ? (
+      {recipes.length === 0 ? (
           <Text style={styles.noRecipesText}>No recipes added yet</Text>
         ) : (
           recipes.map((recipe, index) => (
@@ -317,9 +321,9 @@ const RecipeScreen = ({ route }) => {
             >
               <View style={styles.recipeInfo}>
                 <Text style={styles.recipeText}>{recipe.name}</Text>
-                <Text style={styles.ingredientCount}>{calculateRecipeRatio(recipe.ingredients)}</Text>
-              </View>
-              <View style={styles.iconsContainer}>
+                <Text style={styles.ingredientCount}>
+                  {calculateRecipeRatio(recipe.ingredients)}
+                </Text>
               </View>
               <View style={styles.iconsContainer}>
                 <TouchableOpacity style={styles.editButton} onPress={() => handleOpenEditModal(recipe)}>

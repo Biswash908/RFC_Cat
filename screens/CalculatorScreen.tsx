@@ -22,7 +22,9 @@ const CalculatorScreen: React.FC = () => {
   const navigation = useNavigation();
 
   const navigateToCustomRatio = () => {
-    navigation.navigate('CustomRatioScreen');
+    navigation.navigate('CustomRatioScreen', {
+      customRatio: selectedRatio === 'custom' ? customRatio : null,
+    });
   };
 
   const initialMeatWeight = route.params?.meat ?? 0;
@@ -49,14 +51,6 @@ const CalculatorScreen: React.FC = () => {
     navigation.setOptions({ title: 'Calculator' });
   }, [navigation]);
 
-  useEffect(() => {
-    //navigation.navigate('HomeTabs', { 
-      //screen: 'Home', 
-      //ratio: selectedRatio === 'custom' ? customRatio : { meat: newMeat, bone: newBone, organ: newOrgan },
-    //});
-  }, [selectedRatio, customRatio, newMeat, newBone, newOrgan, navigation]);
-  
-
   useFocusEffect(
     React.useCallback(() => {
       const loadRatios = async () => {
@@ -65,7 +59,9 @@ const CalculatorScreen: React.FC = () => {
           const savedBone = route.params?.boneRatio ?? (await AsyncStorage.getItem('boneRatio'));
           const savedOrgan = route.params?.organRatio ?? (await AsyncStorage.getItem('organRatio'));
           const savedRatio = await AsyncStorage.getItem('selectedRatio');
-
+  
+          console.log('Loaded ratios:', { savedMeat, savedBone, savedOrgan, savedRatio });
+  
           if (savedRatio === 'custom') {
             setCustomRatio({
               meat: Number(savedMeat) || 0,
@@ -82,6 +78,7 @@ const CalculatorScreen: React.FC = () => {
             setNewBone(Number(savedBone) || 0);
             setNewOrgan(Number(savedOrgan) || 0);
           } else {
+            // Default to 80:10:10 ratio
             setSelectedRatio('80:10:10');
             setNewMeat(80);
             setNewBone(10);
@@ -94,22 +91,37 @@ const CalculatorScreen: React.FC = () => {
           setNewOrgan(10);
         }
       };
-
+  
       loadRatios();
     }, [route.params])
-  );
+  );  
 
   useFocusEffect(
     React.useCallback(() => {
       if (customRatios) {
+        console.log('Custom ratios received:', customRatios);
         setNewMeat(customRatios.meat);
         setNewBone(customRatios.bone);
         setNewOrgan(customRatios.organ);
         setCustomRatio(customRatios);
         setSelectedRatio('custom');
+  
+        // Save custom ratios to AsyncStorage
+        const saveCustomRatios = async () => {
+          try {
+            await AsyncStorage.setItem('meatRatio', customRatios.meat.toString());
+            await AsyncStorage.setItem('boneRatio', customRatios.bone.toString());
+            await AsyncStorage.setItem('organRatio', customRatios.organ.toString());
+            await AsyncStorage.setItem('selectedRatio', 'custom');
+          } catch (error) {
+            console.log('Failed to save custom ratios:', error);
+          }
+        };
+  
+        saveCustomRatios();
       }
     }, [customRatios])
-  );
+  );  
 
   useEffect(() => {
     const saveRatios = async () => {
@@ -179,26 +191,26 @@ const CalculatorScreen: React.FC = () => {
     setNewBone(bone);
     setNewOrgan(organ);
     setSelectedRatio(ratio);
-
+  
+    console.log(`Setting new ratio: ${ratio} with meat: ${meat}, bone: ${bone}, organ: ${organ}`);
+    
+    const saveRatioToStorage = async () => {
+      try {
+        await AsyncStorage.setItem('selectedRatio', ratio);
+        await AsyncStorage.setItem('meatRatio', meat.toString());
+        await AsyncStorage.setItem('boneRatio', bone.toString());
+        await AsyncStorage.setItem('organRatio', organ.toString());
+      } catch (error) {
+        console.log('Failed to save ratio:', error);
+      }
+    };
+    saveRatioToStorage();
+  
     if (ratio === 'custom') {
       setCustomRatio({ meat, bone, organ });
-
-      AsyncStorage.setItem('meatRatio', meat.toString());
-      AsyncStorage.setItem('boneRatio', bone.toString());
-      AsyncStorage.setItem('organRatio', organ.toString());
-      AsyncStorage.setItem('selectedRatio', 'custom');
-    } else {
-      AsyncStorage.setItem('selectedRatio', ratio);
     }
-
-    calculateCorrectors(
-      initialMeatWeight,
-      initialBoneWeight,
-      initialOrganWeight,
-      meat,
-      bone,
-      organ
-    );
+  
+    calculateCorrectors(initialMeatWeight, initialBoneWeight, initialOrganWeight, meat, bone, organ);
   };
 
   const showRatioInfoAlert = () => {
@@ -274,10 +286,7 @@ const CalculatorScreen: React.FC = () => {
             ]}
             onPress={navigateToCustomRatio}
           >
-            <Text style={[
-              styles.customButtonText,
-              selectedRatio === 'custom' ? { color: 'white' } : { color: 'black' }
-            ]}>
+            <Text style={[styles.customButtonText, selectedRatio === 'custom' ? { color: 'white' } : { color: 'black' }]}>
               {selectedRatio === 'custom' ? displayCustomRatio : "Custom Ratio"}
             </Text>
           </TouchableOpacity>

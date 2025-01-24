@@ -14,11 +14,12 @@ export const SaveProvider: React.FC = ({ children }) => {
     bone: 0,
     organ: 0,
   });
-
+  console.log("Received customRatios from context:", customRatios);
   const saveCustomRatios = (newRatios: { meat: number; bone: number; organ: number }) => {
     setCustomRatios(newRatios);
     AsyncStorage.setItem('customRatios', JSON.stringify(newRatios));
   };
+
 
   return (
     <SaveContext.Provider value={{ customRatios, saveCustomRatios }}>

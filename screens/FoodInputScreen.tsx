@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, SafeAreaView, StatusBar, Modal, TextInput } from 'react-native';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ActivityIndicator } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
@@ -45,6 +44,8 @@ const FoodInputScreen: React.FC = () => {
   const [currentRecipeId, setCurrentRecipeId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
+  const formatRatio = () => `(${meatRatio}:${boneRatio}:${organRatio})`;
+
   useEffect(() => {
     const newIngredient = route.params?.updatedIngredient;
     if (newIngredient) {
@@ -72,8 +73,55 @@ const FoodInputScreen: React.FC = () => {
       setMeatRatio(meat);
       setBoneRatio(bone);
       setOrganRatio(organ);
+      console.log("Received ratio parameters:", { meat, bone, organ }); // Add this log statement
     }
   }, [route.params]);
+
+  useEffect(() => {
+    const loadRatioFromStorage = async () => {
+        try {
+            const savedRatio = await AsyncStorage.getItem('selectedRatio');
+            const savedMeat = await AsyncStorage.getItem('meatRatio');
+            const savedBone = await AsyncStorage.getItem('boneRatio');
+            const savedOrgan = await AsyncStorage.getItem('organRatio');
+
+            if (savedRatio && savedMeat && savedBone && savedOrgan) {
+                setSelectedRatio(savedRatio);
+                setNewMeat(Number(savedMeat));
+                setNewBone(Number(savedBone));
+                setNewOrgan(Number(savedOrgan));
+            } else {
+                // Set defaults if nothing is saved
+                setSelectedRatio('80:10:10');
+                setNewMeat(80);
+                setNewBone(10);
+                setNewOrgan(10);
+            }
+        } catch (error) {
+            console.log('Failed to load ratio:', error);
+        }
+    };
+    loadRatioFromStorage();
+}, []);
+
+useFocusEffect(
+  React.useCallback(() => {
+      const refreshRatio = async () => {
+          const savedRatio = await AsyncStorage.getItem('selectedRatio');
+          const savedMeat = await AsyncStorage.getItem('meatRatio');
+          const savedBone = await AsyncStorage.getItem('boneRatio');
+          const savedOrgan = await AsyncStorage.getItem('organRatio');
+
+          if (savedRatio && savedMeat && savedBone && savedOrgan) {
+              setSelectedRatio(savedRatio);
+              setNewMeat(Number(savedMeat));
+              setNewBone(Number(savedBone));
+              setNewOrgan(Number(savedOrgan));
+          }
+      };
+      refreshRatio();
+  }, [])
+);
 
   const handleSaveRecipe = async () => {
     if (!recipeName.trim()) {

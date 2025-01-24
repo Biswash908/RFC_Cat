@@ -63,6 +63,8 @@ const CustomRatioScreen: React.FC = () => {
       const ratioString = `${meatRatio}:${boneRatio}:${organRatio}`;
       setButtonText(ratioString);
 
+      console.log('Custom ratios being passed:', { meat: meatRatio, bone: boneRatio, organ: organRatio });
+
       // Call onSave callback to pass the new ratios back to CalculatorScreen
       route.params?.onSave?.(meatRatio, boneRatio, organRatio);
 
