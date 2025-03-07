@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, SafeAreaView, StatusBar, Modal, TextInput } from 'react-native';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -39,10 +39,15 @@ const FoodInputScreen: React.FC = () => {
 
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [recipeName, setRecipeName] = useState('');
-  const [newRecipeName, setNewRecipeName] = useState('');
-  const [recipeToEdit, setRecipeToEdit] = useState(null);
-  const [currentRecipeId, setCurrentRecipeId] = useState<string | null>(null);
+  const selectedRatioRef = useRef<string | null>(null);
+
   const [isSaving, setIsSaving] = useState(false);
+
+  const [newMeat, setNewMeat] = useState<number>(80);
+  const [newBone, setNewBone] = useState<number>(10);
+  const [newOrgan, setNewOrgan] = useState<number>(10);
+  const [selectedRatio, setSelectedRatio] = useState<string>('80:10:10'); // Default ratio
+
 
   const formatRatio = () => `(${meatRatio}:${boneRatio}:${organRatio})`;
 
@@ -68,14 +73,42 @@ const FoodInputScreen: React.FC = () => {
   }, [route.params?.updatedIngredient, globalUnit]);
 
   useEffect(() => {
+    console.log("Received ratio parameters in FIS:", route.params?.ratio);
+  
     if (route.params?.ratio) {
-      const { meat, bone, organ } = route.params.ratio;
-      setMeatRatio(meat);
-      setBoneRatio(bone);
-      setOrganRatio(organ);
-      console.log("Received ratio parameters:", { meat, bone, organ }); // Add this log statement
+      const { meat, bone, organ, selectedRatio } = route.params.ratio;
+  
+      // ✅ Only update if it hasn't been manually changed already
+      if (selectedRatio !== selectedRatioRef.current) {
+        setNewMeat(meat);
+        setNewBone(bone);
+        setNewOrgan(organ);
+        setSelectedRatio(selectedRatio);
+  
+        // ✅ Store the latest selected ratio
+        selectedRatioRef.current = selectedRatio;
+  
+        console.log("✅ Updated ratio in FIS:", { newMeat: meat, newBone: bone, newOrgan: organ, selectedRatio });
+      }
     }
-  }, [route.params]);
+  }, [route.params?.ratio]);    
+
+  useEffect(() => {
+    if (route.params?.ratio) {
+        const { meat, bone, organ, selectedRatio } = route.params.ratio;
+
+        if (selectedRatio !== selectedRatioRef.current) {
+            setNewMeat(meat);
+            setNewBone(bone);
+            setNewOrgan(organ);
+            setSelectedRatio(selectedRatio);
+
+            selectedRatioRef.current = selectedRatio;
+
+            console.log("✅ Updated ratio in FIS:", { newMeat: meat, newBone: bone, newOrgan: organ, selectedRatio });
+        }
+    }
+}, [route.params?.ratio]);
 
   useEffect(() => {
     const loadRatioFromStorage = async () => {
@@ -123,59 +156,60 @@ useFocusEffect(
   }, [])
 );
 
-  const handleSaveRecipe = async () => {
-    if (!recipeName.trim()) {
-      setIsModalVisible(true); // Show modal to add recipe name
-      return;
-    }
-  
-    if (ingredients.length === 0) {
-      Alert.alert('Error', "Ingredients can't be empty.");
-      return;
-    }
-  
-    setIsSaving(true); // Start loading indicator
-    try {
-      const storedRecipes = await AsyncStorage.getItem('recipes');
-      const parsedRecipes = storedRecipes ? JSON.parse(storedRecipes) : [];
-  
-      // Function to generate a new recipe name if a duplicate exists
-      const generateUniqueRecipeName = (name: string, existingRecipes: any[]) => {
-        let newName = name;
-        let counter = 1;
-  
-        while (existingRecipes.some((r: any) => r.name.toLowerCase() === newName.toLowerCase())) {
-          newName = `${name}(${counter})`;
-          counter++;
-        }
-  
-        return newName;
-      };
-  
-      // Generate a unique recipe name
-      const uniqueRecipeName = generateUniqueRecipeName(recipeName.trim(), parsedRecipes);
-  
-      const newRecipe = {
-        id: uuidv4(),
-        name: uniqueRecipeName,
-        ingredients,
-      };
-  
-      // Append the new recipe
-      const updatedRecipes = [...parsedRecipes, newRecipe];
-      await AsyncStorage.setItem('recipes', JSON.stringify(updatedRecipes));
-  
-      Alert.alert('Success', `Recipe saved successfully as "${uniqueRecipeName}"!`);
-      setIsModalVisible(false); // Close the modal
-      setRecipeName(''); // Clear the input field
-  
-    } catch (error) {
-      Alert.alert('Error', 'Failed to save the recipe.');
-      console.error('Failed to save recipe', error);
-    } finally {
-      setIsSaving(false); // Stop loading indicator
-    }
-  };
+const handleSaveRecipe = async () => {
+  if (!recipeName.trim()) {
+    setIsModalVisible(true); // Show modal to add recipe name
+    return;
+  }
+
+  if (ingredients.length === 0) {
+    Alert.alert('Error', "Ingredients can't be empty.");
+    return;
+  }
+
+  setIsSaving(true); // Start loading indicator
+  try {
+    const storedRecipes = await AsyncStorage.getItem('recipes');
+    const parsedRecipes = storedRecipes ? JSON.parse(storedRecipes) : [];
+
+    // Function to generate a unique recipe name
+    const generateUniqueRecipeName = (name: string, existingRecipes: any[]) => {
+      let newName = name;
+      let counter = 1;
+
+      while (existingRecipes.some((r: any) => r.name.toLowerCase() === newName.toLowerCase())) {
+        newName = `${name}(${counter})`;
+        counter++;
+      }
+
+      return newName;
+    };
+
+    // Ensure unique recipe name
+    const uniqueRecipeName = generateUniqueRecipeName(recipeName.trim(), parsedRecipes);
+
+    const newRecipe = {
+      id: uuidv4(),
+      name: uniqueRecipeName,
+      ingredients,
+      ratio: `${newMeat}:${newBone}:${newOrgan}`,  // ✅ Save the selected ratio!
+    };
+
+    // Append the new recipe
+    const updatedRecipes = [...parsedRecipes, newRecipe];
+    await AsyncStorage.setItem('recipes', JSON.stringify(updatedRecipes));
+
+    Alert.alert('Success', `Recipe saved successfully as "${uniqueRecipeName}"!`);
+    setIsModalVisible(false); // Close the modal
+    setRecipeName(''); // Clear the input field
+
+  } catch (error) {
+    Alert.alert('Error', 'Failed to save the recipe.');
+    console.error('Failed to save recipe', error);
+  } finally {
+    setIsSaving(false); // Stop loading indicator
+  }
+};
 
   useEffect(() => {
     const newIngredient = route.params?.updatedIngredient;
@@ -236,18 +270,22 @@ useFocusEffect(
   useEffect(() => {
     console.log("Received recipeId:", route.params?.recipeId);
     console.log("Received ingredients:", route.params?.ingredients);
+    console.log("Received ratio in FIS from Recipe Screen:", route.params?.ratio); // Debug log for ratio
   
     if (route.params?.ingredients) {
       const updatedIngredients = route.params.ingredients.map(ing => ({
         ...ing,
         unit: ing.unit || globalUnit, // Ensure unit consistency
       }));
-      
+  
       setIngredients(updatedIngredients);
       calculateTotals(updatedIngredients); // Update totals for loaded ingredients
     }
     if (route.params?.recipeName) {
       setRecipeName(route.params.recipeName);
+    }
+    if (route.params?.ratio) {
+      setSelectedRatio(route.params.ratio); // Load the ratio if available
     }
   }, [route.params]);
 
@@ -404,19 +442,35 @@ useFocusEffect(
           </TouchableOpacity>
             </View>
           
-          <TouchableOpacity
+            <TouchableOpacity
+
             style={styles.calculateButton}
             onPress={() => {
-              console.log("Navigating to CalculatorScreen with:", { meat: totalMeat, bone: totalBone, organ: totalOrgan });
-              navigation.navigate('CalculatorScreen', { meat: totalMeat, bone: totalBone, organ: totalOrgan });
-            }}>
-            <Text style={styles.calculateButtonText}>Select Ratio & Calculate</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </SafeAreaView>
-  );
-};
+              const latestRatio = route.params?.ratio ?? {
+                meat: newMeat,
+                bone: newBone,
+                organ: newOrgan,
+                selectedRatio: selectedRatio,
+              };
+            
+              console.log("Navigating to CS with latest ratio:", latestRatio);
+            
+              navigation.navigate('CalculatorScreen', {
+                meat: totalMeat,
+                bone: totalBone,
+                organ: totalOrgan,
+                ratio: latestRatio, // Ensure the latest ratio is passed
+              });
+            }}
+            >
+        <Text style={styles.calculateButtonText}>Select Ratio & Calculate</Text>
+      </TouchableOpacity>
+
+              </View>
+            </View>
+          </SafeAreaView>
+        );
+      };
 
 const styles = StyleSheet.create({
   safeArea: {

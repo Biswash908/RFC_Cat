@@ -57,9 +57,9 @@ const FoodInfoScreen = ({ route, navigation }: Props) => {
   const convertWeight = (weight: number): number => {
     switch (selectedUnit) {
       case 'kg':
-        return weight * 1000;
+        return weight;
       case 'lbs':
-        return weight * 453.592;
+        return weight;
       default:
         return weight;
     }

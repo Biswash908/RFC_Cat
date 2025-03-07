@@ -27,17 +27,26 @@ const CustomRatioScreen: React.FC = () => {
         const savedMeatRatio = await AsyncStorage.getItem('meatRatio');
         const savedBoneRatio = await AsyncStorage.getItem('boneRatio');
         const savedOrganRatio = await AsyncStorage.getItem('organRatio');
-
-        setMeatRatio(savedMeatRatio ? parseFloat(savedMeatRatio) : 0);
-        setBoneRatio(savedBoneRatio ? parseFloat(savedBoneRatio) : 0);
-        setOrganRatio(savedOrganRatio ? parseFloat(savedOrganRatio) : 0);
+  
+        // 🔥 Fix: Only update state if values are valid
+        if (savedMeatRatio && savedBoneRatio && savedOrganRatio) {
+          setMeatRatio(parseFloat(savedMeatRatio));
+          setBoneRatio(parseFloat(savedBoneRatio));
+          setOrganRatio(parseFloat(savedOrganRatio));
+        } else if (route.params?.meat && route.params?.bone && route.params?.organ) {
+          // 🔥 If passed via navigation, use those values
+          setMeatRatio(route.params.meat);
+          setBoneRatio(route.params.bone);
+          setOrganRatio(route.params.organ);
+        }
       } catch (error) {
         console.log('Failed to load saved ratios:', error);
       }
     };
+  
     loadSavedRatios();
   }, []);
-
+    
   const calculateTotalRatio = () => {
     return meatRatio + boneRatio + organRatio;
   };
@@ -54,27 +63,28 @@ const CustomRatioScreen: React.FC = () => {
       );
       return;
     }
-
+  
     try {
       await AsyncStorage.setItem('meatRatio', meatRatio.toString());
       await AsyncStorage.setItem('boneRatio', boneRatio.toString());
       await AsyncStorage.setItem('organRatio', organRatio.toString());
-
+      await AsyncStorage.setItem('selectedRatio', 'custom');  // ✅ Save "custom" state
+  
       const ratioString = `${meatRatio}:${boneRatio}:${organRatio}`;
-      setButtonText(ratioString);
-
-      console.log('Custom ratios being passed:', { meat: meatRatio, bone: boneRatio, organ: organRatio });
-
-      // Call onSave callback to pass the new ratios back to CalculatorScreen
+      setButtonText(ratioString);  // ✅ Update button text immediately
+  
+      console.log('🚀 Auto-applying custom ratio:', { meat: meatRatio, bone: boneRatio, organ: organRatio });
+  
+      // ✅ Pass the custom ratio to CalculatorScreen
       route.params?.onSave?.(meatRatio, boneRatio, organRatio);
-
       saveCustomRatios({ meat: meatRatio, bone: boneRatio, organ: organRatio });
-      navigation.goBack();
+  
+      navigation.goBack();  // ✅ Return to CalculatorScreen with the updated custom ratio
     } catch (error) {
       console.log('Failed to save ratios:', error);
       Alert.alert('Error', 'Failed to save the ratio. Please try again.');
     }
-  };
+  };  
 
   const handleInputChange = (value: string, setState: React.Dispatch<React.SetStateAction<number>>) => {
     const sanitizedValue = parseFloat(value.replace(/[^0-9.]/g, ''));

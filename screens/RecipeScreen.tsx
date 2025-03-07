@@ -2,9 +2,10 @@ import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, KeyboardAvoidingView, Platform, Modal, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import 'react-native-get-random-values'; // Required for UUID to work in React Native
+import 'react-native-get-random-values';
 import { FontAwesome } from '@expo/vector-icons';
-import { v4 as uuidv4 } from 'uuid'; // Importing UUID
+import { v4 as uuidv4 } from 'uuid';
+import axios from 'axios';
 
 const RecipeScreen = ({ route }) => {
   const navigation = useNavigation();
@@ -52,7 +53,8 @@ const RecipeScreen = ({ route }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [recipeToEdit, setRecipeToEdit] = useState(null);
 
-  // Destructure `recipeName` and `recipeId` from route params if provided
+  const API_URL = 'http://192.168.1.64:3000/api/saveState'; 
+
   const { recipeName, recipeId } = route?.params || {};
 
   useEffect(() => {
@@ -71,16 +73,19 @@ const RecipeScreen = ({ route }) => {
         }
   
         const newRecipe = {
-          id: uuidv4(), // Use UUID for unique ID
+          id: uuidv4(),
           name: uniqueRecipeName,
-          ingredients: ingredients, // Assign the passed ingredients here
-        };
-  
-        // Add the new recipe to the list
-        setRecipes((prevRecipes) => [...prevRecipes, newRecipe]);
-  
-        // Save the updated recipes list to AsyncStorage
-        AsyncStorage.setItem('recipes', JSON.stringify([...recipes, newRecipe]));
+          ingredients: ingredients,
+          ratio: { meat: 75, bone: 15, organ: 10, selectedRatio: "75:15:10" }, // Save ratio as an object
+      };      
+      
+      // Save locally
+      setRecipes((prevRecipes) => [...prevRecipes, newRecipe]);
+      AsyncStorage.setItem('recipes', JSON.stringify([...recipes, newRecipe]));
+      
+      // Save to the server
+      saveRecipeToServer(newRecipe.id, newRecipe.name);
+      
   
         // Clear the params after adding the recipe
         navigation.setParams({ newRecipeName: null, ingredients: null });
@@ -90,52 +95,51 @@ const RecipeScreen = ({ route }) => {
 
   useFocusEffect(
     React.useCallback(() => {
-      const loadRecipes = async () => {
-        try {
-          const storedRecipes = await AsyncStorage.getItem('recipes');
-          let recipesToSet;
+        const loadRecipes = async () => {
+            try {
+                const storedRecipes = await AsyncStorage.getItem('recipes');
+                let recipesToSet = [];
 
-          if (storedRecipes) {
-            const parsedStoredRecipes = JSON.parse(storedRecipes);
-            recipesToSet = [
-              ...defaultRecipes,
-              ...parsedStoredRecipes.filter(r => !defaultRecipes.some(dr => dr.id === r.id)),
-            ];
-          } else {
-            recipesToSet = defaultRecipes;
-            await AsyncStorage.setItem('recipes', JSON.stringify(defaultRecipes));
-          }
+                if (storedRecipes) {
+                    const parsedStoredRecipes = JSON.parse(storedRecipes);
 
-          setRecipes(recipesToSet);
-        } catch (error) {
-          console.log('Error loading recipes: ', error);
-        }
-      };
+                    // Ensure we don't add default recipes again if they already exist
+                    if (parsedStoredRecipes.length > 0) {
+                        recipesToSet = parsedStoredRecipes;
+                    } else {
+                        console.log("No recipes found, adding defaults.");
+                        recipesToSet = defaultRecipes;
+                        await AsyncStorage.setItem('recipes', JSON.stringify(defaultRecipes));
+                    }
+                } else {
+                    console.log("No saved recipes found, initializing with defaults.");
+                    recipesToSet = defaultRecipes;
+                    await AsyncStorage.setItem('recipes', JSON.stringify(defaultRecipes));
+                }
 
-      loadRecipes();
+                console.log("Final loaded recipes:", recipesToSet);
+                setRecipes(recipesToSet);
+            } catch (error) {
+                console.log('Error loading recipes: ', error);
+            }
+        };
+
+        loadRecipes();
     }, [])
-  );
+);
 
-  const calculateRecipeRatio = (ingredients) => {
-    let totalMeat = 0;
-    let totalBone = 0;
-    let totalOrgan = 0;
-    let totalWeight = 0;
+  const calculateRecipeRatio = (recipe) => {
+    if (!recipe || !recipe.ratio) return 'No Ratio';
   
-    ingredients.forEach((ingredient) => {
-      totalMeat += ingredient.meatWeight;
-      totalBone += ingredient.boneWeight;
-      totalOrgan += ingredient.organWeight;
-      totalWeight += ingredient.totalWeight;
-    });
+    const ratioStr = String(recipe.ratio); // Ensure it's a string
+    const parts = ratioStr.split(':');
   
-    // Calculate the ratio as percentages
-    const meatRatio = totalWeight ? Math.round((totalMeat / totalWeight) * 100) : 0;
-    const boneRatio = totalWeight ? Math.round((totalBone / totalWeight) * 100) : 0;
-    const organRatio = totalWeight ? Math.round((totalOrgan / totalWeight) * 100) : 0;
-  
-    return `${meatRatio} M : ${boneRatio} B : ${organRatio} O`;
-  };
+    if (parts.length === 3) {
+      return `${parts[0]} M : ${parts[1]} B : ${parts[2]} O`;
+    } else {
+      return 'No Ratio'; // Fallback for unexpected cases
+    }
+  };  
 
   useEffect(() => {
     const loadRecipes = async () => {
@@ -191,47 +195,72 @@ const RecipeScreen = ({ route }) => {
     saveRecipes();
   }, [recipes]);
 
+  const updateRecipeInDatabase = async (recipe) => {
+    try {
+      // Send a PUT request to the API to update the recipe
+      const response = await axios.put(`${API_URL}/${recipe.id}`, recipe); // Replace with your API endpoint
+      console.log('Recipe updated in the database:', response.data);
+    } catch (error) {
+      console.error('Error updating recipe in the database:', error);
+    }
+  };
+
   const navigateToRecipeContent = (recipe) => {
     Alert.alert(
-      'Load Recipe',
-      `Do you want to load the recipe "${recipe.name}"?`,
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Yes',
-          onPress: async () => {
-            try {
-              // Save the selected recipe's ingredients, name, and id in AsyncStorage
-              await AsyncStorage.setItem('selectedRecipe', JSON.stringify({
-                ingredients: recipe.ingredients,
-                recipeName: recipe.name,
-                recipeId: recipe.id,
-              }));
-  
-              console.log('Navigating to FoodInputScreen with recipeId:', recipe.id);
-              console.log('Navigating to FoodInputScreen with ingredients:', recipe.ingredients);
-  
-              // Navigate to FoodInputScreen within HomeTabs -> RecipeStack
-              navigation.navigate('HomeTabs', {
-                screen: 'Home',
-                params: {
-                  recipeName: recipe.name,
-                  recipeId: recipe.id,
-                  ingredients: recipe.ingredients,
+        'Load Recipe',
+        `Do you want to load the recipe "${recipe.name}"?`,
+        [
+            { text: 'Cancel', style: 'cancel' },
+            {
+                text: 'Yes',
+                onPress: async () => {
+                    try {
+                        // Ensure ratio is in the correct format
+                        let ratioObject = { meat: 80, bone: 10, organ: 10, selectedRatio: "80:10:10" };
+                        if (typeof recipe.ratio === "string") {
+                            const parts = recipe.ratio.split(":");
+                            if (parts.length === 3) {
+                                ratioObject = {
+                                    meat: Number(parts[0]),
+                                    bone: Number(parts[1]),
+                                    organ: Number(parts[2]),
+                                    selectedRatio: recipe.ratio
+                                };
+                            }
+                        } else if (recipe.ratio && typeof recipe.ratio === "object") {
+                            ratioObject = recipe.ratio;
+                        }
+
+                        console.log("Final ratio object being passed:", ratioObject);
+
+                        // Save selected recipe details
+                        await AsyncStorage.setItem('selectedRecipe', JSON.stringify({
+                            ingredients: recipe.ingredients,
+                            recipeName: recipe.name,
+                            recipeId: recipe.id,
+                            ratio: ratioObject,
+                        }));
+
+                        // Navigate to FoodInputScreen within HomeTabs
+                        navigation.navigate('HomeTabs', {
+                            screen: 'Home',
+                            params: {
+                                recipeName: recipe.name,
+                                recipeId: recipe.id,
+                                ingredients: recipe.ingredients,
+                                ratio: ratioObject,
+                            },
+                        });
+                    } catch (error) {
+                        console.error('Error loading recipe into FoodInputScreen', error);
+                    }
                 },
-              });
-            } catch (error) {
-              console.error('Error loading recipe into FoodInputScreen', error);
-            }
-          },
-        },
-      ],
-      { cancelable: true }
+            },
+        ],
+        { cancelable: true }
     );
-  };
+};
+  
 
   const handleOpenEditModal = (recipe) => {
     setRecipeToEdit(recipe);
@@ -294,10 +323,11 @@ const RecipeScreen = ({ route }) => {
       }
   
       const newRecipe = {
-        id: uuidv4(),  // Use UUID to generate unique ID
+        id: uuidv4(),
         name: uniqueRecipeName,
-        ingredients: [],
-      };
+        ingredients: ingredients,
+        ratio: { meat: 75, bone: 15, organ: 10, selectedRatio: "75:15:10" }, // Save ratio as an object
+    };    
   
       setRecipes([...recipes, newRecipe]);
       setIsModalVisible(false);
@@ -306,6 +336,27 @@ const RecipeScreen = ({ route }) => {
       Alert.alert('Error', "Recipe name can't be empty.");
     }
   };
+
+  const saveRecipeToServer = async (recipeId, recipeName) => {
+    try {
+        const response = await fetch('http://192.168.1.64:3000/api/saveState', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ recipeId, recipeName }),
+        });
+
+        if (response.ok) {
+            console.log('Recipe saved successfully');
+        } else {
+            console.error('Failed to save recipe');
+        }
+    } catch (error) {
+        console.error('Error saving recipe:', error);
+    }
+};
+
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: 'white' }}>
@@ -322,7 +373,7 @@ const RecipeScreen = ({ route }) => {
               <View style={styles.recipeInfo}>
                 <Text style={styles.recipeText}>{recipe.name}</Text>
                 <Text style={styles.ingredientCount}>
-                  {calculateRecipeRatio(recipe.ingredients)}
+                  {calculateRecipeRatio(recipe)}
                 </Text>
               </View>
               <View style={styles.iconsContainer}>
