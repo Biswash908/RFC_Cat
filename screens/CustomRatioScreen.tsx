@@ -1,3 +1,5 @@
+// CustomRatioScreen.tsx - Updated to ensure custom ratios are saved properly
+
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -7,6 +9,7 @@ import { useSaveContext } from '../SaveContext';
 type RootStackParamList = {
   CalculatorScreen: { meat: number; bone: number; organ: number };
   CustomRatioScreen: {
+    customRatio?: any;
     onSave?: (meat: number, bone: number, organ: number) => void;
   };
 };
@@ -31,32 +34,31 @@ const CustomRatioScreen: React.FC = () => {
   useEffect(() => {
     const loadSavedRatios = async () => {
       try {
-        const savedMeatRatio = await AsyncStorage.getItem("meatRatio");
-        const savedBoneRatio = await AsyncStorage.getItem("boneRatio");
-        const savedOrganRatio = await AsyncStorage.getItem("organRatio");
-        const savedRatioType = await AsyncStorage.getItem("selectedRatio");
+        // First check if we have custom ratio from route params
+        if (route.params?.customRatio) {
+          console.log("✅ Loading custom ratio from params:", route.params.customRatio);
+          setMeatRatio(route.params.customRatio.meat || 0);
+          setBoneRatio(route.params.customRatio.bone || 0);
+          setOrganRatio(route.params.customRatio.organ || 0);
+          return;
+        }
 
-        console.log("✅ Loading saved ratios in CustomRatioScreen:", {
-          meat: savedMeatRatio,
-          bone: savedBoneRatio,
-          organ: savedOrganRatio,
-          type: savedRatioType,
+        // Otherwise load from AsyncStorage
+        const customMeatRatio = await AsyncStorage.getItem("customMeatRatio");
+        const customBoneRatio = await AsyncStorage.getItem("customBoneRatio");
+        const customOrganRatio = await AsyncStorage.getItem("customOrganRatio");
+
+        console.log("✅ Loading saved custom ratios in CustomRatioScreen:", {
+          meat: customMeatRatio,
+          bone: customBoneRatio,
+          organ: customOrganRatio,
         });
 
         // Set saved ratios if they exist
-        if (
-          savedMeatRatio &&
-          savedBoneRatio &&
-          savedOrganRatio &&
-          savedRatioType === "custom"
-        ) {
-          setMeatRatio(Number.parseFloat(savedMeatRatio));
-          setBoneRatio(Number.parseFloat(savedBoneRatio));
-          setOrganRatio(Number.parseFloat(savedOrganRatio));
-        } else if (route.params?.customRatio) {
-          setMeatRatio(route.params.customRatio.meat);
-          setBoneRatio(route.params.customRatio.bone);
-          setOrganRatio(route.params.customRatio.organ);
+        if (customMeatRatio && customBoneRatio && customOrganRatio) {
+          setMeatRatio(Number.parseFloat(customMeatRatio));
+          setBoneRatio(Number.parseFloat(customBoneRatio));
+          setOrganRatio(Number.parseFloat(customOrganRatio));
         }
       } catch (error) {
         console.log("Failed to load saved ratios:", error);
@@ -64,7 +66,7 @@ const CustomRatioScreen: React.FC = () => {
     };
 
     loadSavedRatios();
-  }, []);
+  }, [route.params?.customRatio]);
 
   const calculateTotalRatio = () => {
     return meatRatio + boneRatio + organRatio;
@@ -86,24 +88,42 @@ const CustomRatioScreen: React.FC = () => {
       );
       return;
     }
-
+  
     try {
-      await AsyncStorage.setItem("meatRatio", meatRatio.toString());
-      await AsyncStorage.setItem("boneRatio", boneRatio.toString());
-      await AsyncStorage.setItem("organRatio", organRatio.toString());
-      await AsyncStorage.setItem("selectedRatio", "custom");
-
-      console.log("🚀 Auto-applying custom ratio:", {
+      // Save to AsyncStorage - save both to regular ratio keys and custom ratio keys
+      await AsyncStorage.multiSet([
+        ["meatRatio", meatRatio.toString()],
+        ["boneRatio", boneRatio.toString()],
+        ["organRatio", organRatio.toString()],
+        ["selectedRatio", "custom"],
+        ["customMeatRatio", meatRatio.toString()],
+        ["customBoneRatio", boneRatio.toString()],
+        ["customOrganRatio", organRatio.toString()]
+      ]);
+  
+      console.log("🚀 Saving custom ratio:", {
         meat: meatRatio,
         bone: boneRatio,
         organ: organRatio,
       });
-
-      // Pass the custom ratio to CalculatorScreen
-      route.params?.onSave?.(meatRatio, boneRatio, organRatio);
-      saveCustomRatios({ meat: meatRatio, bone: boneRatio, organ: organRatio });
-
-      navigation.goBack();
+  
+      // Save to context
+      saveCustomRatios({ 
+        meat: meatRatio, 
+        bone: boneRatio, 
+        organ: organRatio 
+      });
+  
+      // Navigate back with the custom ratio
+      navigation.navigate("CalculatorScreen", {
+        ratio: {
+          meat: meatRatio,
+          bone: boneRatio,
+          organ: organRatio,
+          selectedRatio: "custom",
+          isUserDefined: true
+        }
+      });
     } catch (error) {
       console.log("Failed to save ratios:", error);
       Alert.alert("Error", "Failed to save the ratio. Please try again.");

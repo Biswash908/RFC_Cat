@@ -358,47 +358,45 @@ const CalculatorScreen: React.FC = () => {
     React.useCallback(() => {
       const loadRatios = async () => {
         try {
-          const savedMeat =
-            route.params?.meatRatio ??
-            (await AsyncStorage.getItem("meatRatio"));
-          const savedBone =
-            route.params?.boneRatio ??
-            (await AsyncStorage.getItem("boneRatio"));
-          const savedOrgan =
-            route.params?.organRatio ??
-            (await AsyncStorage.getItem("organRatio"));
+          // If user has already selected a ratio, don't override it
+          if (userSelectedRatio) {
+            console.log("🔒 User has manually selected a ratio, not loading from storage");
+            return;
+          }
+          
+          const savedMeat = await AsyncStorage.getItem("meatRatio");
+          const savedBone = await AsyncStorage.getItem("boneRatio");
+          const savedOrgan = await AsyncStorage.getItem("organRatio");
           const savedRatio = await AsyncStorage.getItem("selectedRatio");
-
+  
           console.log("🔄 Loaded ratios:", {
             savedMeat,
             savedBone,
             savedOrgan,
             savedRatio,
           });
-
-          if (savedRatio === "custom") {
-            setCustomRatio({
-              meat: Number(savedMeat) || 0,
-              bone: Number(savedBone) || 0,
-              organ: Number(savedOrgan) || 0,
-            });
-            setSelectedRatio("custom");
-            setNewMeat(Number(savedMeat) || 0);
-            setNewBone(Number(savedBone) || 0);
-            setNewOrgan(Number(savedOrgan) || 0);
-          } else if (savedRatio) {
+  
+          if (savedRatio) {
             setSelectedRatio(savedRatio);
             setNewMeat(Number(savedMeat) || 0);
             setNewBone(Number(savedBone) || 0);
             setNewOrgan(Number(savedOrgan) || 0);
+            
+            if (savedRatio === "custom") {
+              setCustomRatio({
+                meat: Number(savedMeat) || 0,
+                bone: Number(savedBone) || 0,
+                organ: Number(savedOrgan) || 0,
+              });
+            }
           }
         } catch (error) {
           console.log("❌ Failed to load ratios:", error);
         }
       };
-
+  
       loadRatios();
-    }, [route.params])
+    }, [userSelectedRatio]) // Add userSelectedRatio as a dependency
   );
 
   useFocusEffect(
@@ -501,81 +499,77 @@ const CalculatorScreen: React.FC = () => {
     setOrganCorrect(organCorrect);
   }
 
-  const handleApplyRatio = () => {
-    console.log("✅ User confirmed manual ratio selection:", {
-      meat: newMeat,
-      bone: newBone,
-      organ: newOrgan,
-      selectedRatio,
-    });
+  // Modified setRatio function for CalculatorScreen.tsx
+const setRatio = (
+  meat: number,
+  bone: number,
+  organ: number,
+  ratio: string
+) => {
+  console.log(`✅ Setting ratio: ${ratio} (${meat}:${bone}:${organ})`);
 
-    setUserSelectedRatio(true);
+  // Update state
+  setNewMeat(meat);
+  setNewBone(bone);
+  setNewOrgan(organ);
+  setSelectedRatio(ratio);
+  setUserSelectedRatio(true); // Mark as manually selected
 
-    // ✅ Save the selected ratio to AsyncStorage so it's persistently available
-    setRatio(newMeat, newBone, newOrgan, selectedRatio);
+  if (ratio === "custom") {
+    setCustomRatio({ meat, bone, organ });
+  }
 
-    // ✅ Navigate to Home in HomeTabs with the updated ratio
-    navigation.navigate("HomeTabs", {
-      screen: "Home",
-      params: {
-        ratio: {
-          meat: newMeat,
-          bone: newBone,
-          organ: newOrgan,
-          selectedRatio,
-          isUserDefined: true, // Mark as user-defined when manually selected
-        },
-      },
-    });
-  };
-
-  const setRatio = (
-    meat: number,
-    bone: number,
-    organ: number,
-    ratio: string
-  ) => {
-    console.log(
-      `✅ Setting new ratio: ${ratio} (Meat: ${meat}, Bone: ${bone}, Organ: ${organ})`
+  // Save to AsyncStorage immediately
+  const saveItems = [
+    ["meatRatio", meat.toString()],
+    ["boneRatio", bone.toString()],
+    ["organRatio", organ.toString()],
+    ["selectedRatio", ratio]
+  ];
+  
+  if (ratio === "custom") {
+    saveItems.push(
+      ["customMeatRatio", meat.toString()],
+      ["customBoneRatio", bone.toString()],
+      ["customOrganRatio", organ.toString()]
     );
-
-    setNewMeat(meat);
-    setNewBone(bone);
-    setNewOrgan(organ);
-    setSelectedRatio(ratio);
-    setUserSelectedRatio(true); // ✅ Marks it as manually selected
-
-    if (ratio === "custom") {
-      setCustomRatio({ meat, bone, organ });
+  }
+  
+  AsyncStorage.multiSet(saveItems);
+  
+  // Update the route params to pass the ratio values to home
+  // This ensures the ratio is available to other screens without navigating away
+  navigation.setParams({
+    ratio: {
+      meat: meat,
+      bone: bone,
+      organ: organ,
+      selectedRatio: ratio,
+      isUserDefined: true
     }
-
-    // ✅ Save the full ratio values to AsyncStorage
-    const saveRatioToStorage = async () => {
-      try {
-        await AsyncStorage.setItem("meatRatio", meat.toString());
-        await AsyncStorage.setItem("boneRatio", bone.toString());
-        await AsyncStorage.setItem("organRatio", organ.toString());
-        await AsyncStorage.setItem("selectedRatio", ratio); // ✅ Ensures selectedRatio matches values
-
-        if (ratio === "custom") {
-          await AsyncStorage.setItem("customMeatRatio", meat.toString());
-          await AsyncStorage.setItem("customBoneRatio", bone.toString());
-          await AsyncStorage.setItem("customOrganRatio", organ.toString());
-        }
-
-        console.log("✅ Manual ratio selection saved:", {
-          meat,
-          bone,
-          organ,
-          ratio,
-        });
-      } catch (error) {
-        console.log("❌ Failed to save manual ratio:", error);
+  });
+  
+  // Also update the selected recipe if one is loaded
+  const updateSelectedRecipe = async () => {
+    try {
+      const selectedRecipeStr = await AsyncStorage.getItem("selectedRecipe");
+      if (selectedRecipeStr) {
+        const selectedRecipe = JSON.parse(selectedRecipeStr);
+        selectedRecipe.ratio = {
+          meat: meat,
+          bone: bone,
+          organ: organ,
+          selectedRatio: ratio,
+          isUserDefined: true
+        };
+        await AsyncStorage.setItem("selectedRecipe", JSON.stringify(selectedRecipe));
       }
-    };
-
-    saveRatioToStorage();
+    } catch (error) {
+      console.error("Error updating selected recipe ratio:", error);
+    }
   };
+  updateSelectedRecipe();
+};
 
   const showRatioInfoAlert = () => {
     Alert.alert(
@@ -696,13 +690,6 @@ const CalculatorScreen: React.FC = () => {
             >
               {selectedRatio === "custom" ? displayCustomRatio : "Custom Ratio"}
             </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.applyButton}
-            onPress={handleApplyRatio}
-          >
-            <Text style={styles.applyButtonText}>Apply Ratio</Text>
           </TouchableOpacity>
 
           {/* Corrector Information */}
