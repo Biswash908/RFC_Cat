@@ -1,10 +1,22 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, KeyboardAvoidingView, Platform, Modal, Alert } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import 'react-native-get-random-values';
-import { FontAwesome } from '@expo/vector-icons';
-import { v4 as uuidv4 } from 'uuid';
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  Modal,
+  Alert,
+} from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import "react-native-get-random-values";
+import { FontAwesome } from "@expo/vector-icons";
+import { v4 as uuidv4 } from "uuid";
+import axios from "axios";
 
 const RecipeScreen = ({ route }) => {
   const navigation = useNavigation();
@@ -449,8 +461,11 @@ const RecipeScreen = ({ route }) => {
 
                 ratioObject = {
                   ...recipe.ratio,
-                  selectedRatio: selectedRatio,
-                  isUserDefined: !isDefaultRecipe,
+                  selectedRatio: recipe.ratio.selectedRatio || selectedRatio,
+                  isUserDefined:
+                    recipe.ratio.isUserDefined !== undefined
+                      ? recipe.ratio.isUserDefined
+                      : !isDefaultRecipe,
                 };
               }
 
@@ -466,6 +481,9 @@ const RecipeScreen = ({ route }) => {
               }
 
               console.log("Final ratio object being passed:", ratioObject);
+
+              // Reset userSelectedRatio when loading a recipe to ensure recipe's ratio takes precedence
+              await AsyncStorage.setItem("userSelectedRatio", "false");
 
               // Save selected recipe details
               await AsyncStorage.setItem(
