@@ -147,7 +147,11 @@ const App: React.FC = () => {
           />
           <Stack.Screen name="CalculatorScreen" component={CalculatorScreen} />
           <Stack.Screen name="RecipeContentScreen" component={RecipeContentScreen} />
-          <Stack.Screen name="CustomRatioScreen" component={CustomRatioScreen} />
+          <Stack.Screen 
+            name="CustomRatioScreen" 
+            component={CustomRatioScreen} 
+            options={{ title: 'Custom Ratio' }}
+          />
           <Stack.Screen name="InfoAndSupportScreen" component={InfoAndSupportScreen} />
           <Stack.Screen name="RecipeScreen" component={RecipeScreen} />
 

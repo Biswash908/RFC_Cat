@@ -205,54 +205,13 @@ const CalculatorScreen: React.FC = () => {
       setCurrentOrganWeight(route.params.organ);
   }, [route.params?.meat, route.params?.bone, route.params?.organ]);
 
-  // Add this function near the top of the component, after state declarations
   const initializeCorrectorsWithDefaultValues = () => {
-    console.log("🚀 Initializing correctors with default values");
-
-    // Default values for a fresh launch - standard 80:10:10 ratio
-    const defaultMeat = 80;
-    const defaultBone = 10;
-    const defaultOrgan = 10;
-
-    // Use a sample weight of 100g with deliberate imbalance
-    const sampleMeatWeight = 85; // More meat than ideal
-    const sampleBoneWeight = 8; // Less bone than ideal
-    const sampleOrganWeight = 7; // Less organ than ideal
-
-    console.log("📊 Sample weights (with deliberate imbalance):", {
-      sampleMeatWeight,
-      sampleBoneWeight,
-      sampleOrganWeight,
-    });
-
-    // Calculate correctors based on these sample weights
-    const meatCorrect = {
-      bone: (sampleMeatWeight / defaultMeat) * defaultBone - sampleBoneWeight,
-      organ:
-        (sampleMeatWeight / defaultMeat) * defaultOrgan - sampleOrganWeight,
-    };
-
-    const boneCorrect = {
-      meat: (sampleBoneWeight / defaultBone) * defaultMeat - sampleMeatWeight,
-      organ:
-        (sampleBoneWeight / defaultBone) * defaultOrgan - sampleOrganWeight,
-    };
-
-    const organCorrect = {
-      meat: (sampleOrganWeight / defaultOrgan) * defaultMeat - sampleMeatWeight,
-      bone: (sampleOrganWeight / defaultOrgan) * defaultBone - sampleBoneWeight,
-    };
-
-    console.log("📊 Sample corrector values:", {
-      meatCorrect,
-      boneCorrect,
-      organCorrect,
-    });
-
-    // Set the corrector values
-    setMeatCorrect(meatCorrect);
-    setBoneCorrect(boneCorrect);
-    setOrganCorrect(organCorrect);
+    console.log("🚀 Initializing correctors with zero values");
+    
+    // Set all corrector values to zero on initial load
+    setMeatCorrect({ bone: 0, organ: 0 });
+    setBoneCorrect({ meat: 0, organ: 0 });
+    setOrganCorrect({ meat: 0, bone: 0 });
   };
 
   useEffect(() => {
@@ -805,125 +764,70 @@ const CalculatorScreen: React.FC = () => {
     ])
   );
 
-  // Add a dedicated function for sample calculations on fresh launch
   const calculateSampleCorrectorsForFreshLaunch = () => {
-    console.log("📊 Calculating sample correctors for fresh launch");
-
-    // Use a sample weight of 100g for demonstration
-    const sampleWeight = 100;
-
-    // Create a deliberate imbalance in the sample weights to show meaningful corrections
-    // Instead of perfect ratio weights, we'll use weights that need correction
-    let sampleMeatWeight, sampleBoneWeight, sampleOrganWeight;
-
-    if (selectedRatio === "custom") {
-      // For custom ratio, use slightly imbalanced weights
-      sampleMeatWeight = ((sampleWeight * newMeat) / 100) * 1.2; // 20% more meat than ideal
-      sampleBoneWeight = ((sampleWeight * newBone) / 100) * 0.8; // 20% less bone than ideal
-      sampleOrganWeight = (sampleWeight * newOrgan) / 100; // Organ weight as expected
-    } else if (selectedRatio === "80:10:10") {
-      // For 80:10:10 ratio, use these sample weights
-      sampleMeatWeight = 85; // More meat than ideal
-      sampleBoneWeight = 8; // Less bone than ideal
-      sampleOrganWeight = 7; // Less organ than ideal
-    } else if (selectedRatio === "75:15:10") {
-      // For 75:15:10 ratio, use these sample weights
-      sampleMeatWeight = 80; // More meat than ideal
-      sampleBoneWeight = 12; // Less bone than ideal
-      sampleOrganWeight = 8; // Less organ than ideal
-    } else {
-      // Default case with imbalance
-      sampleMeatWeight = ((sampleWeight * newMeat) / 100) * 1.1;
-      sampleBoneWeight = ((sampleWeight * newBone) / 100) * 0.9;
-      sampleOrganWeight = (sampleWeight * newOrgan) / 100;
-    }
-
-    console.log("📊 Sample weights (with deliberate imbalance):", {
-      sampleMeatWeight,
-      sampleBoneWeight,
-      sampleOrganWeight,
-    });
-
-    // Calculate correctors based on these sample weights
-    const meatCorrect = {
-      bone: (sampleMeatWeight / newMeat) * newBone - sampleBoneWeight,
-      organ: (sampleMeatWeight / newMeat) * newOrgan - sampleOrganWeight,
-    };
-
-    const boneCorrect = {
-      meat: (sampleBoneWeight / newBone) * newMeat - sampleMeatWeight,
-      organ: (sampleBoneWeight / newBone) * newOrgan - sampleOrganWeight,
-    };
-
-    const organCorrect = {
-      meat: (sampleOrganWeight / newOrgan) * newMeat - sampleMeatWeight,
-      bone: (sampleOrganWeight / newOrgan) * newBone - sampleBoneWeight,
-    };
-
-    console.log("📊 Sample corrector values:", {
-      meatCorrect,
-      boneCorrect,
-      organCorrect,
-    });
-
+    console.log("📊 Setting correctors to zero for fresh launch");
+    
+    // Set all corrector values to zero when no ingredients are present
+    const meatCorrect = { bone: 0, organ: 0 };
+    const boneCorrect = { meat: 0, organ: 0 };
+    const organCorrect = { meat: 0, bone: 0 };
+    
     // Set the corrector values
     setMeatCorrect(meatCorrect);
     setBoneCorrect(boneCorrect);
     setOrganCorrect(organCorrect);
   };
 
-  // Modify the calculateCorrectors function to handle zero values better
-  function calculateCorrectors(
-    meatWeight: number,
-    boneWeight: number,
-    organWeight: number,
-    newMeat: number,
-    newBone: number,
-    newOrgan: number
-  ) {
-    console.log("📊 Calculating correctors with:", {
-      meatWeight,
-      boneWeight,
-      organWeight,
-      newMeat,
-      newBone,
-      newOrgan,
-    });
+function calculateCorrectors(
+  meatWeight: number,
+  boneWeight: number,
+  organWeight: number,
+  newMeat: number,
+  newBone: number,
+  newOrgan: number
+) {
+  console.log("📊 Calculating correctors with:", {
+    meatWeight,
+    boneWeight,
+    organWeight,
+    newMeat,
+    newBone,
+    newOrgan,
+  });
 
-    // If we have no weights at all (fresh launch), use sample calculation
-    if (meatWeight === 0 && boneWeight === 0 && organWeight === 0) {
-      calculateSampleCorrectorsForFreshLaunch();
-      return;
-    }
-
-    const meatCorrect = { bone: 0, organ: 0 };
-    const boneCorrect = { meat: 0, organ: 0 };
-    const organCorrect = { meat: 0, bone: 0 };
-
-    // Normal calculation when we have actual weights
-    if (meatWeight > 0) {
-      meatCorrect.bone = (meatWeight / newMeat) * newBone - boneWeight;
-      meatCorrect.organ = (meatWeight / newMeat) * newOrgan - organWeight;
-    }
-
-    if (boneWeight > 0) {
-      boneCorrect.meat = (boneWeight / newBone) * newMeat - meatWeight;
-      boneCorrect.organ = (boneWeight / newBone) * newOrgan - organWeight;
-    }
-
-    if (organWeight > 0) {
-      organCorrect.meat = (organWeight / newOrgan) * newMeat - meatWeight;
-      organCorrect.bone = (organWeight / newOrgan) * newBone - boneWeight;
-    }
-
-    setMeatCorrect(meatCorrect);
-    setBoneCorrect(boneCorrect);
-    setOrganCorrect(organCorrect);
+  // If we have no weights at all (fresh launch or no ingredients), set all values to zero
+  if (meatWeight === 0 && boneWeight === 0 && organWeight === 0) {
+    console.log("📊 No ingredients detected, setting correctors to zero");
+    setMeatCorrect({ bone: 0, organ: 0 });
+    setBoneCorrect({ meat: 0, organ: 0 });
+    setOrganCorrect({ meat: 0, bone: 0 });
+    return;
   }
 
-  // Also modify the setRatio function to update the recipe's ratio
-  // Modify the setRatio function to ensure persistence
-  // Replace the existing setRatio function with this improved version
+  const meatCorrect = { bone: 0, organ: 0 };
+  const boneCorrect = { meat: 0, organ: 0 };
+  const organCorrect = { meat: 0, bone: 0 };
+
+  // Normal calculation when we have actual weights
+  if (meatWeight > 0) {
+    meatCorrect.bone = (meatWeight / newMeat) * newBone - boneWeight;
+    meatCorrect.organ = (meatWeight / newMeat) * newOrgan - organWeight;
+  }
+
+  if (boneWeight > 0) {
+    boneCorrect.meat = (boneWeight / newBone) * newMeat - meatWeight;
+    boneCorrect.organ = (boneWeight / newBone) * newOrgan - organWeight;
+  }
+
+  if (organWeight > 0) {
+    organCorrect.meat = (organWeight / newOrgan) * newMeat - meatWeight;
+    organCorrect.bone = (organWeight / newOrgan) * newBone - boneWeight;
+  }
+
+  setMeatCorrect(meatCorrect);
+  setBoneCorrect(boneCorrect);
+  setOrganCorrect(organCorrect);
+}
 
   const setRatio = (
     meat: number,

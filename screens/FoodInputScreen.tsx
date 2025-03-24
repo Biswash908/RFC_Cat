@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, SafeAreaView, StatusBar, Modal, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, SafeAreaView, StatusBar, Modal, TextInput, Platform, Dimensions } from 'react-native';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ActivityIndicator } from 'react-native';
@@ -7,6 +7,11 @@ import { FontAwesome } from '@expo/vector-icons';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useUnit } from '../UnitContext';
 import { v4 as uuidv4 } from 'uuid';
+
+// Added for iOS-specific styling
+const isIOS = Platform.OS === 'ios';
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const isSmallDevice = SCREEN_WIDTH < 375; // iPhone SE and similar sized devices
 
 export type Ingredient = {
   name: string;
@@ -420,30 +425,28 @@ const FoodInputScreen: React.FC = () => {
           </Text>
         </View>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
-          {ingredients.length === 0 ? (
-            <Text style={styles.noIngredientsText}>
-              No ingredients added yet
-            </Text>
-          ) : (
-            ingredients.map((ingredient, index) => (
-              <View key={index} style={styles.ingredientItem}>
-                <View style={styles.ingredientInfo}>
-                  <Text style={styles.ingredientText}>{ingredient.name}</Text>
-                  <Text style={styles.ingredientDetails}>
-                    M: {formatWeight(ingredient.meatWeight, ingredient.unit)} B:{" "}
-                    {formatWeight(ingredient.boneWeight, ingredient.unit)} O:{" "}
-                    {formatWeight(ingredient.organWeight, ingredient.unit)}
-                  </Text>
-                  <Text style={styles.totalWeightText}>
-                    Total:{" "}
-                    {formatWeight(
-                      isNaN(ingredient.totalWeight)
-                        ? 0
-                        : ingredient.totalWeight,
-                      ingredient.unit
-                    )}
-                  </Text>
-                </View>
+        {ingredients.length === 0 ? (
+          <Text style={styles.noIngredientsText}>
+            No ingredients added yet
+          </Text>
+        ) : (
+          ingredients.map((ingredient, index) => (
+            <View key={index} style={styles.ingredientItem}>
+              <View style={styles.ingredientHeader}>
+                <Text style={styles.ingredientText}>{ingredient.name}</Text>
+                <Text style={styles.totalWeightText}>
+                  Total: {formatWeight(
+                    isNaN(ingredient.totalWeight) ? 0 : ingredient.totalWeight,
+                    ingredient.unit
+                  )}
+                </Text>
+              </View>
+              <View style={styles.detailsContainer}>
+                <Text style={styles.detailsText}>
+                  M: {formatWeight(ingredient.meatWeight, ingredient.unit)} B:{" "}
+                  {formatWeight(ingredient.boneWeight, ingredient.unit)} O:{" "}
+                  {formatWeight(ingredient.organWeight, ingredient.unit)}
+                </Text>
                 <View style={styles.iconsContainer}>
                   <TouchableOpacity
                     style={styles.editButton}
@@ -464,8 +467,9 @@ const FoodInputScreen: React.FC = () => {
                   </TouchableOpacity>
                 </View>
               </View>
-            ))
-          )}
+            </View>
+          ))
+        )}
         </ScrollView>
 
         <Modal
@@ -574,12 +578,12 @@ const styles = StyleSheet.create({
   },
   topBar: {
     backgroundColor: "white",
-    paddingVertical: 35,
+    paddingVertical: 30,
     alignItems: "center",
     marginTop: 5,
   },
   topBarText: {
-    fontSize: 25,
+    fontSize: isIOS ? (isSmallDevice ? 20 : 22) : 24, // Modified for iOS
     fontWeight: "600",
     color: "black",
   },
@@ -591,12 +595,12 @@ const styles = StyleSheet.create({
     marginTop: -25,
   },
   totalText: {
-    fontSize: 20,
+    fontSize: isIOS ? 18 : 20, // Modified for iOS
     fontWeight: "bold",
     color: "black",
   },
   subTotalText: {
-    fontSize: 16,
+    fontSize: isIOS ? 14 : 16, // Modified for iOS
     color: "black",
   },
   scrollContainer: {
@@ -622,7 +626,7 @@ const styles = StyleSheet.create({
     elevation: 5, // Shadow for Android
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: isIOS ? 18 : 20, // Modified for iOS
     fontWeight: "bold",
     marginBottom: 15,
     textAlign: "center",
@@ -659,12 +663,13 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     color: "white",
-    fontSize: 16,
+    fontSize: isIOS ? 16 : 18, // Modified for iOS
+    fontWeight: "bold",
   },
   cancelButtonText: {
     color: "white",
     fontWeight: "bold",
-    fontSize: 16,
+    fontSize: isIOS ? 14 : 16, // Modified for iOS
   },
   addNewRecipeButton: {
     backgroundColor: "#000080",
@@ -680,7 +685,7 @@ const styles = StyleSheet.create({
     color: "white",
   },
   noIngredientsText: {
-    fontSize: 18,
+    fontSize: isIOS ? 16 : 18, // Modified for iOS
     color: "gray",
     textAlign: "center",
     marginTop: 50,
@@ -700,45 +705,52 @@ const styles = StyleSheet.create({
   },
   clearButtonText: {
     color: "white",
-    fontSize: 16,
+    fontSize: isIOS ? 14 : 16, // Modified for iOS
     fontWeight: "bold",
   },
   ingredientItem: {
+    padding: 8,
+    backgroundColor: "#f5f5f5",
+    borderRadius: 5,
+    marginBottom: 8,
+  },
+  ingredientHeader: {
+    flexDirection: "row",
+    justifyContent: "flex-start",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  ingredientText: {
+    fontSize: isIOS ? 16 : 18,
+    fontWeight: "bold",
+    color: "black",
+    marginRight: 8, 
+    //flex: 1,
+  },
+  totalWeightText: {
+    fontSize: isIOS ? 14 : 16,
+    color: "#404040",
+    marginLeft: 8,
+  },
+  detailsContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 10,
-    padding: 10,
-    backgroundColor: "#f5f5f5",
-    borderRadius: 5,
   },
-  ingredientInfo: {
+  detailsText: {
+    fontSize: isIOS ? 14 : 16,
+    color: "#404040",
     flex: 1,
-  },
-  ingredientText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "black",
-  },
-  ingredientDetails: {
-    fontSize: 16,
-    color: "#404040",
-    marginVertical: 5,
-  },
-  totalWeightText: {
-    fontSize: 16,
-    color: "#404040",
   },
   iconsContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginLeft: 10,
   },
   editButton: {
-    marginRight: 20,
+    marginRight: 10,
   },
   deleteButton: {
-    padding: 5,
+    marginLeft: 5,
   },
   calculateButtonContainer: {
     padding: 15,
@@ -772,12 +784,7 @@ const styles = StyleSheet.create({
   },
   ingredientButtonText: {
     color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  saveButtonText: {
-    color: "white",
-    fontSize: 18,
+    fontSize: isIOS ? 16 : 16, // Modified for iOS
     fontWeight: "bold",
   },
   calculateButton: {
@@ -790,7 +797,7 @@ const styles = StyleSheet.create({
   },
   calculateButtonText: {
     color: "white",
-    fontSize: 18,
+    fontSize: isIOS ? 16 : 18, // Modified for iOS
     fontWeight: "bold",
   },
   bottomBar: {
@@ -804,7 +811,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   bottomBarText: {
-    fontSize: 14,
+    fontSize: isIOS ? 12 : 14, // Modified for iOS
     color: "white",
     fontWeight: "bold",
     marginTop: 1,
