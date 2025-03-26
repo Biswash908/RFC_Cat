@@ -197,6 +197,7 @@ const FoodInputScreen: React.FC = () => {
     }, []),
   )
 
+  // Modify the handleSaveRecipe function to keep the recipe name after saving
   const handleSaveRecipe = async () => {
     if (!recipeName.trim()) {
       setIsModalVisible(true) // Show modal to add recipe name
@@ -228,6 +229,9 @@ const FoodInputScreen: React.FC = () => {
 
       // Ensure unique recipe name
       const uniqueRecipeName = generateUniqueRecipeName(recipeName.trim(), parsedRecipes)
+      
+      // Update the recipe name state with the unique name
+      setRecipeName(uniqueRecipeName)
 
       // ✅ IMPROVED: Save the ratio as an object with selectedRatio property
       const ratioObject = {
@@ -251,7 +255,7 @@ const FoodInputScreen: React.FC = () => {
 
       Alert.alert("Success", `Recipe saved successfully as "${uniqueRecipeName}"!`)
       setIsModalVisible(false) // Close the modal
-      setRecipeName("") // Clear the input field
+      // Don't clear the recipe name: setRecipeName("")
     } catch (error) {
       Alert.alert("Error", "Failed to save the recipe.")
       console.error("Failed to save recipe", error)
@@ -352,6 +356,7 @@ const FoodInputScreen: React.FC = () => {
     ])
   }
 
+  // Also modify the handleClearScreen function to ensure it clears the recipe name
   const handleClearScreen = () => {
     Alert.alert("Clear Ingredients", "Are you sure you want to clear all ingredients and the recipe name?", [
       { text: "Cancel", style: "cancel" },
@@ -359,7 +364,7 @@ const FoodInputScreen: React.FC = () => {
         text: "Clear",
         onPress: () => {
           setIngredients([])
-          setRecipeName("")
+          setRecipeName("") // This will reset the header to "Raw Feeding Calc"
           setTotalMeat(0)
           setTotalBone(0)
           setTotalOrgan(0)
@@ -536,7 +541,8 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     paddingVertical: vs(isSmallDevice ? 7 : 15),
     alignItems: "center",
-    marginTop: Platform.OS === "ios" ? (isSmallDevice ? 5 : -15) : 7,
+    marginTop: Platform.OS === "ios" ? (isSmallDevice ? 5 : -5) : 10,
+    marginBottom: Platform.OS === "ios" ? (isSmallDevice ? 5 : -5) : -4,
   },
   topBarText: {
     fontSize: rs(isSmallDevice ? 20 : 22),
