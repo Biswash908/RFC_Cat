@@ -70,6 +70,9 @@ const FoodInputScreen: React.FC = () => {
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [recipeName, setRecipeName] = useState("")
   const selectedRatioRef = useRef<string | null>(null)
+  
+  // Add a ref to track the loaded recipe ID
+  const loadedRecipeIdRef = useRef<string | null>(null)
 
   const [isSaving, setIsSaving] = useState(false)
 
@@ -197,20 +200,62 @@ const FoodInputScreen: React.FC = () => {
     }, []),
   )
 
-  // Modify the handleSaveRecipe function to keep the recipe name after saving
-  const handleSaveRecipe = async () => {
-    if (!recipeName.trim()) {
-      setIsModalVisible(true) // Show modal to add recipe name
+  // Modified updateExistingRecipe function to properly update the recipe with the current ratio
+const updateExistingRecipe = async (recipeId: string) => {
+  try {
+    setIsSaving(true)
+    const storedRecipes = await AsyncStorage.getItem("recipes")
+    if (!storedRecipes) {
+      Alert.alert("Error", "Could not find recipes in storage.")
       return
     }
 
-    if (ingredients.length === 0) {
-      Alert.alert("Error", "Ingredients can't be empty.")
-      return
+    const parsedRecipes = JSON.parse(storedRecipes)
+    
+    // Create the updated ratio object
+    const ratioObject = {
+      meat: newMeat,
+      bone: newBone,
+      organ: newOrgan,
+      selectedRatio: selectedRatio,
+      isUserDefined: true,
     }
 
-    setIsSaving(true) // Start loading indicator
+    // Find and update the recipe
+    const updatedRecipes = parsedRecipes.map(recipe => {
+      if (recipe.id === recipeId) {
+        // Create a deep copy of the recipe to avoid reference issues
+        const updatedRecipe = JSON.parse(JSON.stringify(recipe));
+        
+        // Update only the necessary fields
+        updatedRecipe.name = recipeName;
+        updatedRecipe.ingredients = JSON.parse(JSON.stringify(ingredients));
+        updatedRecipe.ratio = ratioObject;
+        
+        return updatedRecipe;
+      }
+      return recipe;
+    })
+
+    // Save the updated recipes
+    await AsyncStorage.setItem("recipes", JSON.stringify(updatedRecipes))
+    
+    // Update the loaded recipe ID to the current one (in case it was a new recipe)
+    loadedRecipeIdRef.current = recipeId;
+    
+    Alert.alert("Success", `Recipe "${recipeName}" updated successfully!`)
+  } catch (error) {
+    console.error("Failed to update recipe", error)
+    Alert.alert("Error", "Failed to update the recipe.")
+  } finally {
+    setIsSaving(false)
+  }
+}
+
+  // Function to create a new recipe
+  const createNewRecipe = async () => {
     try {
+      setIsSaving(true)
       const storedRecipes = await AsyncStorage.getItem("recipes")
       const parsedRecipes = storedRecipes ? JSON.parse(storedRecipes) : []
 
@@ -233,20 +278,21 @@ const FoodInputScreen: React.FC = () => {
       // Update the recipe name state with the unique name
       setRecipeName(uniqueRecipeName)
 
-      // ✅ IMPROVED: Save the ratio as an object with selectedRatio property
+      // Create the ratio object
       const ratioObject = {
         meat: newMeat,
         bone: newBone,
         organ: newOrgan,
         selectedRatio: selectedRatio,
-        isUserDefined: true, // Mark as user-defined since it's created by the user
+        isUserDefined: true,
       }
 
+      // Create the new recipe
       const newRecipe = {
         id: uuidv4(),
         name: uniqueRecipeName,
         ingredients,
-        ratio: ratioObject, // ✅ Save the ratio as an object
+        ratio: ratioObject,
       }
 
       // Append the new recipe
@@ -254,13 +300,56 @@ const FoodInputScreen: React.FC = () => {
       await AsyncStorage.setItem("recipes", JSON.stringify(updatedRecipes))
 
       Alert.alert("Success", `Recipe saved successfully as "${uniqueRecipeName}"!`)
-      setIsModalVisible(false) // Close the modal
-      // Don't clear the recipe name: setRecipeName("")
+      setIsModalVisible(false)
     } catch (error) {
       Alert.alert("Error", "Failed to save the recipe.")
       console.error("Failed to save recipe", error)
     } finally {
-      setIsSaving(false) // Stop loading indicator
+      setIsSaving(false)
+    }
+  }
+
+  // Modified handleSaveRecipe function
+  const handleSaveRecipe = async () => {
+    if (!recipeName.trim()) {
+      setIsModalVisible(true) // Show modal to add recipe name
+      return
+    }
+
+    if (ingredients.length === 0) {
+      Alert.alert("Error", "Ingredients can't be empty.")
+      return
+    }
+
+    // Check if we're editing a loaded recipe
+    if (loadedRecipeIdRef.current) {
+      // Ask user if they want to update the existing recipe or create a new one
+      Alert.alert(
+        "Save Recipe",
+        `Do you want to save changes to "${recipeName}"?`,
+        [
+          { 
+            text: "New Recipe", 
+            onPress: () => {
+              // Show the modal to enter a new name
+              setIsModalVisible(true)
+            }
+          },
+          {
+            text: "Update",
+            onPress: () => {
+              updateExistingRecipe(loadedRecipeIdRef.current)
+            }
+          },
+          {
+            text: "Cancel",
+            style: "cancel"
+          }
+        ]
+      )
+    } else {
+      // No loaded recipe, create a new one
+      createNewRecipe()
     }
   }
 
@@ -325,6 +414,11 @@ const FoodInputScreen: React.FC = () => {
     console.log("Received ingredients:", route.params?.ingredients)
     console.log("Received ratio in FIS from Recipe Screen:", route.params?.ratio) // Debug log for ratio
 
+    // Store the loaded recipe ID
+    if (route.params?.recipeId) {
+      loadedRecipeIdRef.current = route.params.recipeId
+    }
+
     if (route.params?.ingredients) {
       const updatedIngredients = route.params.ingredients.map((ing) => ({
         ...ing,
@@ -356,7 +450,7 @@ const FoodInputScreen: React.FC = () => {
     ])
   }
 
-  // Also modify the handleClearScreen function to ensure it clears the recipe name
+  // Also modify the handleClearScreen function to reset the loaded recipe ID
   const handleClearScreen = () => {
     Alert.alert("Clear Ingredients", "Are you sure you want to clear all ingredients and the recipe name?", [
       { text: "Cancel", style: "cancel" },
@@ -369,6 +463,8 @@ const FoodInputScreen: React.FC = () => {
           setTotalBone(0)
           setTotalOrgan(0)
           setTotalWeight(0)
+          // Reset the loaded recipe ID
+          loadedRecipeIdRef.current = null
         },
       },
     ])
@@ -467,7 +563,16 @@ const FoodInputScreen: React.FC = () => {
                 onChangeText={setRecipeName}
               />
               <View style={styles.modalButtonsContainer}>
-                <TouchableOpacity style={styles.saveButton} onPress={handleSaveRecipe}>
+                <TouchableOpacity 
+                  style={styles.saveButton} 
+                  onPress={() => {
+                    if (!recipeName.trim()) {
+                      Alert.alert("Error", "Recipe name can't be empty.");
+                      return;
+                    }
+                    createNewRecipe();
+                  }}
+                >
                   <Text style={styles.saveButtonText}>Save</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.cancelButton} onPress={() => setIsModalVisible(false)}>

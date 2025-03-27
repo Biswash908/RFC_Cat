@@ -406,6 +406,11 @@ const RecipeScreen = ({ route }) => {
     }
   };
 
+  // Helper function to create a deep copy of an object
+  const deepCopy = (obj) => {
+    return JSON.parse(JSON.stringify(obj));
+  };
+
   const navigateToRecipeContent = (recipe) => {
     Alert.alert(
       "Load Recipe",
@@ -416,6 +421,9 @@ const RecipeScreen = ({ route }) => {
           text: "Yes",
           onPress: async () => {
             try {
+              // Create a deep copy of the recipe to avoid reference issues
+              const recipeCopy = deepCopy(recipe);
+              
               // ✅ IMPROVED: Better ratio parsing to handle both string and object formats
               // ✅ FIXED: Properly determine if this is a standard ratio or custom ratio
               let ratioObject;
@@ -423,11 +431,11 @@ const RecipeScreen = ({ route }) => {
               // Check if this is a default recipe with a standard ratio
               const isDefaultRecipe = recipe.id.startsWith("default");
 
-              if (typeof recipe.ratio === "string") {
-                const parts = recipe.ratio.split(":");
+              if (typeof recipeCopy.ratio === "string") {
+                const parts = recipeCopy.ratio.split(":");
                 if (parts.length === 3) {
                   // Check if this matches one of our standard ratios
-                  const ratioString = recipe.ratio;
+                  const ratioString = recipeCopy.ratio;
                   let selectedRatio = "custom";
 
                   if (ratioString === "80:10:10") {
@@ -446,9 +454,9 @@ const RecipeScreen = ({ route }) => {
                     isUserDefined: !isDefaultRecipe,
                   };
                 }
-              } else if (recipe.ratio && typeof recipe.ratio === "object") {
-                // For object format ratios
-                const ratioValues = `${recipe.ratio.meat}:${recipe.ratio.bone}:${recipe.ratio.organ}`;
+              } else if (recipeCopy.ratio && typeof recipeCopy.ratio === "object") {
+                // For object format ratios - create a new object to avoid reference issues
+                const ratioValues = `${recipeCopy.ratio.meat}:${recipeCopy.ratio.bone}:${recipeCopy.ratio.organ}`;
                 let selectedRatio = "custom";
 
                 if (ratioValues === "80:10:10") {
@@ -460,11 +468,11 @@ const RecipeScreen = ({ route }) => {
                 }
 
                 ratioObject = {
-                  ...recipe.ratio,
-                  selectedRatio: recipe.ratio.selectedRatio || selectedRatio,
+                  ...recipeCopy.ratio,
+                  selectedRatio: recipeCopy.ratio.selectedRatio || selectedRatio,
                   isUserDefined:
-                    recipe.ratio.isUserDefined !== undefined
-                      ? recipe.ratio.isUserDefined
+                    recipeCopy.ratio.isUserDefined !== undefined
+                      ? recipeCopy.ratio.isUserDefined
                       : !isDefaultRecipe,
                 };
               }
@@ -485,13 +493,16 @@ const RecipeScreen = ({ route }) => {
               // Reset userSelectedRatio when loading a recipe to ensure recipe's ratio takes precedence
               await AsyncStorage.setItem("userSelectedRatio", "false");
 
+              // Create a deep copy of the ingredients to avoid reference issues
+              const ingredientsCopy = deepCopy(recipeCopy.ingredients);
+
               // Save selected recipe details
               await AsyncStorage.setItem(
                 "selectedRecipe",
                 JSON.stringify({
-                  ingredients: recipe.ingredients,
-                  recipeName: recipe.name,
-                  recipeId: recipe.id,
+                  ingredients: ingredientsCopy,
+                  recipeName: recipeCopy.name,
+                  recipeId: recipeCopy.id,
                   ratio: ratioObject,
                   isUserDefined: !isDefaultRecipe,
                 })
@@ -501,9 +512,9 @@ const RecipeScreen = ({ route }) => {
               navigation.navigate("HomeTabs", {
                 screen: "Home",
                 params: {
-                  recipeName: recipe.name,
-                  recipeId: recipe.id,
-                  ingredients: recipe.ingredients,
+                  recipeName: recipeCopy.name,
+                  recipeId: recipeCopy.id,
+                  ingredients: ingredientsCopy,
                   ratio: ratioObject,
                   isUserDefined: !isDefaultRecipe,
                 },
