@@ -68,13 +68,13 @@ const HomeTabs = () => {
             }}>
               <FontAwesome6
                 name={iconName}
-                size={isIOS ? (isSmallDevice ? 18 : 24) : (isSmallDevice ? 22 : 28)}
+                size={isIOS ? (isSmallDevice ? 18 : 24) : (isSmallDevice ? 22 : 26)} //Bottom nav bar icons
                 color={"white"}
                 style={{ textAlign: "center" }}
               />
               <Text style={{ 
                 color: "white", 
-                fontSize: isIOS ? (isSmallDevice ? 8 : 10) : (isSmallDevice ? 10 : 12),
+                fontSize: isIOS ? (isSmallDevice ? 8 : 10) : (isSmallDevice ? 10 : 12), //Bottom nav bar text
                 marginTop: isIOS && isSmallDevice ? 1 : 2
               }}>
                 {label}
@@ -86,7 +86,7 @@ const HomeTabs = () => {
         tabBarStyle: {
           backgroundColor: "#000080",
           paddingVertical: isIOS ? (isSmallDevice ? 0 : 3) : (isSmallDevice ? 2 : 5),
-          height: isIOS ? (isSmallDevice ? 40 : 60) : (isSmallDevice ? 45 : 60),
+          height: isIOS ? (isSmallDevice ? 40 : 75) : (isSmallDevice ? 45 : 60), //Bottom nav bar height
         },
       })}
     >

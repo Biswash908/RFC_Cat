@@ -70,7 +70,7 @@ const FoodInputScreen: React.FC = () => {
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [recipeName, setRecipeName] = useState("")
   const selectedRatioRef = useRef<string | null>(null)
-  
+
   // Add a ref to track the loaded recipe ID
   const loadedRecipeIdRef = useRef<string | null>(null)
 
@@ -86,6 +86,27 @@ const FoodInputScreen: React.FC = () => {
   const [organRatio, setOrganRatio] = useState<number>(10)
 
   const formatRatio = () => `(${meatRatio}:${boneRatio}:${organRatio})`
+
+  // Add a state to track temporary ratio changes
+  const [tempRatio, setTempRatio] = useState<{
+    meat: number
+    bone: number
+    organ: number
+    selectedRatio: string
+    isUserDefined: boolean
+  } | null>(null)
+
+  // Add a state to track unsaved changes
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+
+  // Add refs to store the original ingredients and ratio
+  const originalIngredientsRef = useRef<Ingredient[]>([])
+  const originalRatioRef = useRef<{
+    meat: number
+    bone: number
+    organ: number
+    selectedRatio: string
+  } | null>(null)
 
   useEffect(() => {
     const newIngredient = route.params?.updatedIngredient
@@ -105,6 +126,40 @@ const FoodInputScreen: React.FC = () => {
       calculateTotals(updatedIngredients) // Ensure that total values are updated immediately
     }
   }, [route.params?.updatedIngredient, globalUnit])
+
+  // Modify the useEffect that handles ratio parameters to store in tempRatio instead of immediately saving
+  useEffect(() => {
+    console.log("Received ratio parameters in FIS:", route.params?.ratio)
+
+    if (route.params?.ratio) {
+      const { meat, bone, organ, selectedRatio } = route.params.ratio
+
+      // Store in temporary ratio state instead of immediately saving
+      setTempRatio({
+        meat,
+        bone,
+        organ,
+        selectedRatio,
+        isUserDefined: true,
+      })
+
+      // Update UI with the new ratio values
+      setNewMeat(meat)
+      setNewBone(bone)
+      setNewOrgan(organ)
+      setSelectedRatio(selectedRatio)
+
+      // Store the latest selected ratio for UI purposes only
+      selectedRatioRef.current = selectedRatio
+
+      console.log("✅ Updated temporary ratio in FIS:", {
+        newMeat: meat,
+        newBone: bone,
+        newOrgan: organ,
+        selectedRatio,
+      })
+    }
+  }, [route.params?.ratio])
 
   useEffect(() => {
     console.log("Received ratio parameters in FIS:", route.params?.ratio)
@@ -200,59 +255,249 @@ const FoodInputScreen: React.FC = () => {
     }, []),
   )
 
-  // Modified updateExistingRecipe function to properly update the recipe with the current ratio
-const updateExistingRecipe = async (recipeId: string) => {
-  try {
-    setIsSaving(true)
-    const storedRecipes = await AsyncStorage.getItem("recipes")
-    if (!storedRecipes) {
-      Alert.alert("Error", "Could not find recipes in storage.")
+  // Add a useFocusEffect to load temporary ratio values when the screen is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      const loadTemporaryRatio = async () => {
+        try {
+          // First check if there's a temporary ratio stored
+          const tempSelectedRatio = await AsyncStorage.getItem("tempSelectedRatio")
+          const tempMeatRatio = await AsyncStorage.getItem("tempMeatRatio")
+          const tempBoneRatio = await AsyncStorage.getItem("tempBoneRatio")
+          const tempOrganRatio = await AsyncStorage.getItem("tempOrganRatio")
+
+          console.log("🔄 Loading temporary ratio in FoodInputScreen:", {
+            tempSelectedRatio,
+            tempMeatRatio,
+            tempBoneRatio,
+            tempOrganRatio,
+          })
+
+          if (tempSelectedRatio && tempMeatRatio && tempBoneRatio && tempOrganRatio) {
+            // Use the temporary ratio values for UI display
+            setSelectedRatio(tempSelectedRatio)
+            setNewMeat(Number(tempMeatRatio))
+            setNewBone(Number(tempBoneRatio))
+            setNewOrgan(Number(tempOrganRatio))
+
+            // Also update tempRatio state
+            setTempRatio({
+              meat: Number(tempMeatRatio),
+              bone: Number(tempBoneRatio),
+              organ: Number(tempOrganRatio),
+              selectedRatio: tempSelectedRatio,
+              isUserDefined: true,
+            })
+
+            console.log("✅ Applied temporary ratio from storage in FoodInputScreen:", {
+              meat: Number(tempMeatRatio),
+              bone: Number(tempBoneRatio),
+              organ: Number(tempOrganRatio),
+              selectedRatio: tempSelectedRatio,
+            })
+          }
+        } catch (error) {
+          console.log("❌ Failed to load temporary ratio:", error)
+        }
+      }
+
+      loadTemporaryRatio()
+    }, []),
+  )
+
+  // Add this to the checkForChanges function
+  const checkForChanges = () => {
+    // Check if ingredients have changed
+    if (originalIngredientsRef.current.length !== ingredients.length) {
+      setHasUnsavedChanges(true)
+      AsyncStorage.setItem("hasUnsavedChanges", "true")
       return
     }
 
-    const parsedRecipes = JSON.parse(storedRecipes)
-    
-    // Create the updated ratio object
-    const ratioObject = {
-      meat: newMeat,
-      bone: newBone,
-      organ: newOrgan,
-      selectedRatio: selectedRatio,
-      isUserDefined: true,
-    }
+    // Check if any ingredient details have changed
+    const ingredientsChanged = ingredients.some((ingredient, index) => {
+      const original = originalIngredientsRef.current[index]
+      if (!original) return true
 
-    // Find and update the recipe
-    const updatedRecipes = parsedRecipes.map(recipe => {
-      if (recipe.id === recipeId) {
-        // Create a deep copy of the recipe to avoid reference issues
-        const updatedRecipe = JSON.parse(JSON.stringify(recipe));
-        
-        // Update only the necessary fields
-        updatedRecipe.name = recipeName;
-        updatedRecipe.ingredients = JSON.parse(JSON.stringify(ingredients));
-        updatedRecipe.ratio = ratioObject;
-        
-        return updatedRecipe;
-      }
-      return recipe;
+      return (
+        ingredient.name !== original.name ||
+        ingredient.meatWeight !== original.meatWeight ||
+        ingredient.boneWeight !== original.boneWeight ||
+        ingredient.organWeight !== original.organWeight ||
+        ingredient.totalWeight !== original.totalWeight
+      )
     })
 
-    // Save the updated recipes
-    await AsyncStorage.setItem("recipes", JSON.stringify(updatedRecipes))
-    
-    // Update the loaded recipe ID to the current one (in case it was a new recipe)
-    loadedRecipeIdRef.current = recipeId;
-    
-    Alert.alert("Success", `Recipe "${recipeName}" updated successfully!`)
-  } catch (error) {
-    console.error("Failed to update recipe", error)
-    Alert.alert("Error", "Failed to update the recipe.")
-  } finally {
-    setIsSaving(false)
-  }
-}
+    // Check if ratio has changed
+    const ratioChanged =
+      originalRatioRef.current &&
+      (newMeat !== originalRatioRef.current.meat ||
+        newBone !== originalRatioRef.current.bone ||
+        newOrgan !== originalRatioRef.current.organ ||
+        selectedRatio !== originalRatioRef.current.selectedRatio)
 
-  // Function to create a new recipe
+    const hasChanges = ingredientsChanged || ratioChanged
+    setHasUnsavedChanges(hasChanges)
+    AsyncStorage.setItem("hasUnsavedChanges", hasChanges ? "true" : "false")
+  }
+
+  // Add this after the other useEffect hooks
+  useEffect(() => {
+    if (route.params?.saveChangesFirst) {
+      // If we're returning to save changes, show the save dialog
+      if (hasUnsavedChanges && loadedRecipeIdRef.current) {
+        handleSaveRecipe()
+      }
+    }
+  }, [route.params?.saveChangesFirst, hasUnsavedChanges])
+
+  // Modified updateExistingRecipe function to properly update the recipe with the current ratio
+  // Modify the handleSaveRecipe function to include the temporary ratio when saving
+  const handleSaveRecipe = async () => {
+    if (!recipeName.trim()) {
+      setIsModalVisible(true) // Show modal to add recipe name
+      return
+    }
+
+    if (ingredients.length === 0) {
+      Alert.alert("Error", "Ingredients can't be empty.")
+      return
+    }
+
+    // Check if we're editing a loaded recipe
+    if (loadedRecipeIdRef.current) {
+      // Ask user if they want to update the existing recipe or create a new one
+      Alert.alert("Save Recipe", `Do you want to save changes to "${recipeName}"?`, [
+        {
+          text: "New Recipe",
+          onPress: () => {
+            // Show the modal to enter a new name
+            setIsModalVisible(true)
+          },
+        },
+        {
+          text: "Update",
+          onPress: () => {
+            // Include tempRatio when updating the recipe
+            updateExistingRecipe(loadedRecipeIdRef.current)
+          },
+        },
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+      ])
+    } else {
+      // No loaded recipe, create a new one with the current ratio
+      createNewRecipe()
+    }
+  }
+
+  // Modify the updateExistingRecipe function to accept the temporary ratio
+  // Replace the existing updateExistingRecipe function with this version
+
+  const updateExistingRecipe = async (recipeId: string) => {
+    try {
+      setIsSaving(true)
+      const storedRecipes = await AsyncStorage.getItem("recipes")
+      if (!storedRecipes) {
+        Alert.alert("Error", "Could not find recipes in storage.")
+        return
+      }
+
+      const parsedRecipes = JSON.parse(storedRecipes)
+
+      // Get the current temporary ratio values
+      const tempMeatRatio = (await AsyncStorage.getItem("tempMeatRatio")) || newMeat.toString()
+      const tempBoneRatio = (await AsyncStorage.getItem("tempBoneRatio")) || newBone.toString()
+      const tempOrganRatio = (await AsyncStorage.getItem("tempOrganRatio")) || newOrgan.toString()
+      const tempSelectedRatio = (await AsyncStorage.getItem("tempSelectedRatio")) || selectedRatio
+
+      // Create the updated ratio object using the temporary values
+      const ratioObject = {
+        meat: Number(tempMeatRatio),
+        bone: Number(tempBoneRatio),
+        organ: Number(tempOrganRatio),
+        selectedRatio: tempSelectedRatio,
+        isUserDefined: true,
+      }
+
+      console.log("✅ Saving recipe with ratio:", ratioObject)
+
+      // Find and update the recipe
+      const updatedRecipes = parsedRecipes.map((recipe) => {
+        if (recipe.id === recipeId) {
+          // Create a deep copy of the recipe to avoid reference issues
+          const updatedRecipe = JSON.parse(JSON.stringify(recipe))
+
+          // Update only the necessary fields
+          updatedRecipe.name = recipeName
+          updatedRecipe.ingredients = JSON.parse(JSON.stringify(ingredients))
+          updatedRecipe.ratio = ratioObject
+
+          // If this is a custom ratio, also save it separately
+          if (tempSelectedRatio === "custom") {
+            updatedRecipe.savedCustomRatio = {
+              meat: Number(tempMeatRatio),
+              bone: Number(tempBoneRatio),
+              organ: Number(tempOrganRatio),
+            }
+          }
+
+          return updatedRecipe
+        }
+        return recipe
+      })
+
+      // Save the updated recipes
+      await AsyncStorage.setItem("recipes", JSON.stringify(updatedRecipes))
+
+      // Update the loaded recipe ID to the current one (in case it was a new recipe)
+      loadedRecipeIdRef.current = recipeId
+
+      // After saving, update the permanent ratio values to match the temporary ones
+      await AsyncStorage.multiSet([
+        ["meatRatio", tempMeatRatio],
+        ["boneRatio", tempBoneRatio],
+        ["organRatio", tempOrganRatio],
+        ["selectedRatio", tempSelectedRatio],
+      ])
+
+      // Update the selected recipe in AsyncStorage
+      const selectedRecipeStr = await AsyncStorage.getItem("selectedRecipe")
+      if (selectedRecipeStr) {
+        const selectedRecipe = JSON.parse(selectedRecipeStr)
+        selectedRecipe.ratio = ratioObject
+
+        // If this is a custom ratio, also save it separately
+        if (tempSelectedRatio === "custom") {
+          selectedRecipe.savedCustomRatio = {
+            meat: Number(tempMeatRatio),
+            bone: Number(tempBoneRatio),
+            organ: Number(tempOrganRatio),
+          }
+        }
+
+        await AsyncStorage.setItem("selectedRecipe", JSON.stringify(selectedRecipe))
+      }
+
+      Alert.alert("Success", `Recipe "${recipeName}" updated successfully!`)
+      setHasUnsavedChanges(false)
+      await AsyncStorage.setItem("hasUnsavedChanges", "false")
+      // Store the updated state as the new original state
+      originalIngredientsRef.current = JSON.parse(JSON.stringify(ingredients))
+      originalRatioRef.current = ratioObject
+    } catch (error) {
+      console.error("Failed to update recipe", error)
+      Alert.alert("Error", "Failed to update the recipe.")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  // Modify the createNewRecipe function to accept the temporary ratio
+  // Replace the existing createNewRecipe function with this version
+
   const createNewRecipe = async () => {
     try {
       setIsSaving(true)
@@ -274,18 +519,26 @@ const updateExistingRecipe = async (recipeId: string) => {
 
       // Ensure unique recipe name
       const uniqueRecipeName = generateUniqueRecipeName(recipeName.trim(), parsedRecipes)
-      
+
       // Update the recipe name state with the unique name
       setRecipeName(uniqueRecipeName)
 
-      // Create the ratio object
+      // Get the current temporary ratio values
+      const tempMeatRatio = (await AsyncStorage.getItem("tempMeatRatio")) || newMeat.toString()
+      const tempBoneRatio = (await AsyncStorage.getItem("tempBoneRatio")) || newBone.toString()
+      const tempOrganRatio = (await AsyncStorage.getItem("tempOrganRatio")) || newOrgan.toString()
+      const tempSelectedRatio = (await AsyncStorage.getItem("tempSelectedRatio")) || selectedRatio
+
+      // Create the ratio object using the temporary values
       const ratioObject = {
-        meat: newMeat,
-        bone: newBone,
-        organ: newOrgan,
-        selectedRatio: selectedRatio,
+        meat: Number(tempMeatRatio),
+        bone: Number(tempBoneRatio),
+        organ: Number(tempOrganRatio),
+        selectedRatio: tempSelectedRatio,
         isUserDefined: true,
       }
+
+      console.log("✅ Creating new recipe with ratio:", ratioObject)
 
       // Create the new recipe
       const newRecipe = {
@@ -299,8 +552,21 @@ const updateExistingRecipe = async (recipeId: string) => {
       const updatedRecipes = [...parsedRecipes, newRecipe]
       await AsyncStorage.setItem("recipes", JSON.stringify(updatedRecipes))
 
+      // After saving, update the permanent ratio values to match the temporary ones
+      await AsyncStorage.multiSet([
+        ["meatRatio", tempMeatRatio],
+        ["boneRatio", tempBoneRatio],
+        ["organRatio", tempOrganRatio],
+        ["selectedRatio", tempSelectedRatio],
+      ])
+
       Alert.alert("Success", `Recipe saved successfully as "${uniqueRecipeName}"!`)
       setIsModalVisible(false)
+      setHasUnsavedChanges(false)
+      await AsyncStorage.setItem("hasUnsavedChanges", "false")
+      // Store the updated state as the new original state
+      originalIngredientsRef.current = JSON.parse(JSON.stringify(ingredients))
+      originalRatioRef.current = ratioObject
     } catch (error) {
       Alert.alert("Error", "Failed to save the recipe.")
       console.error("Failed to save recipe", error)
@@ -309,48 +575,29 @@ const updateExistingRecipe = async (recipeId: string) => {
     }
   }
 
-  // Modified handleSaveRecipe function
-  const handleSaveRecipe = async () => {
-    if (!recipeName.trim()) {
-      setIsModalVisible(true) // Show modal to add recipe name
-      return
-    }
-
-    if (ingredients.length === 0) {
-      Alert.alert("Error", "Ingredients can't be empty.")
-      return
-    }
-
-    // Check if we're editing a loaded recipe
-    if (loadedRecipeIdRef.current) {
-      // Ask user if they want to update the existing recipe or create a new one
-      Alert.alert(
-        "Save Recipe",
-        `Do you want to save changes to "${recipeName}"?`,
-        [
-          { 
-            text: "New Recipe", 
-            onPress: () => {
-              // Show the modal to enter a new name
-              setIsModalVisible(true)
-            }
-          },
-          {
-            text: "Update",
-            onPress: () => {
-              updateExistingRecipe(loadedRecipeIdRef.current)
-            }
-          },
-          {
-            text: "Cancel",
-            style: "cancel"
-          }
-        ]
-      )
-    } else {
-      // No loaded recipe, create a new one
-      createNewRecipe()
-    }
+  // Also modify the handleClearScreen function to reset the hasUnsavedChanges flag in AsyncStorage
+  const handleClearScreen = () => {
+    Alert.alert("Clear Ingredients", "Are you sure you want to clear all ingredients and the recipe name?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Clear",
+        onPress: async () => {
+          setIngredients([])
+          setRecipeName("") // This will reset the header to "Raw Feeding Calc"
+          setTotalMeat(0)
+          setTotalBone(0)
+          setTotalOrgan(0)
+          setTotalWeight(0)
+          // Reset the loaded recipe ID
+          loadedRecipeIdRef.current = null
+          // Reset change tracking
+          setHasUnsavedChanges(false)
+          await AsyncStorage.setItem("hasUnsavedChanges", "false")
+          originalIngredientsRef.current = []
+          originalRatioRef.current = null
+        },
+      },
+    ])
   }
 
   useEffect(() => {
@@ -427,14 +674,21 @@ const updateExistingRecipe = async (recipeId: string) => {
 
       setIngredients(updatedIngredients)
       calculateTotals(updatedIngredients) // Update totals for loaded ingredients
+      originalIngredientsRef.current = JSON.parse(JSON.stringify(updatedIngredients))
     }
     if (route.params?.recipeName) {
       setRecipeName(route.params.recipeName)
     }
     if (route.params?.ratio) {
       setSelectedRatio(route.params.ratio) // Load the ratio if available
+      originalRatioRef.current = route.params.ratio
     }
   }, [route.params])
+
+  useEffect(() => {
+    // Initial check for changes when the component mounts
+    checkForChanges()
+  }, [ingredients, newMeat, newBone, newOrgan, selectedRatio])
 
   const handleDeleteIngredient = (name: string) => {
     Alert.alert("Delete Ingredient", `Are you sure you want to delete ${name}?`, [
@@ -445,26 +699,6 @@ const updateExistingRecipe = async (recipeId: string) => {
           const updatedIngredients = ingredients.filter((ing) => ing.name !== name)
           setIngredients(updatedIngredients)
           calculateTotals(updatedIngredients)
-        },
-      },
-    ])
-  }
-
-  // Also modify the handleClearScreen function to reset the loaded recipe ID
-  const handleClearScreen = () => {
-    Alert.alert("Clear Ingredients", "Are you sure you want to clear all ingredients and the recipe name?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Clear",
-        onPress: () => {
-          setIngredients([])
-          setRecipeName("") // This will reset the header to "Raw Feeding Calc"
-          setTotalMeat(0)
-          setTotalBone(0)
-          setTotalOrgan(0)
-          setTotalWeight(0)
-          // Reset the loaded recipe ID
-          loadedRecipeIdRef.current = null
         },
       },
     ])
@@ -563,14 +797,14 @@ const updateExistingRecipe = async (recipeId: string) => {
                 onChangeText={setRecipeName}
               />
               <View style={styles.modalButtonsContainer}>
-                <TouchableOpacity 
-                  style={styles.saveButton} 
+                <TouchableOpacity
+                  style={styles.saveButton}
                   onPress={() => {
                     if (!recipeName.trim()) {
-                      Alert.alert("Error", "Recipe name can't be empty.");
-                      return;
+                      Alert.alert("Error", "Recipe name can't be empty.")
+                      return
                     }
-                    createNewRecipe();
+                    createNewRecipe()
                   }}
                 >
                   <Text style={styles.saveButtonText}>Save</Text>
@@ -601,13 +835,32 @@ const updateExistingRecipe = async (recipeId: string) => {
           <View style={styles.buttonRow}>
             <TouchableOpacity
               style={styles.calculateButton}
-              onPress={() => {
-                const latestRatio = route.params?.ratio ?? {
-                  meat: newMeat,
-                  bone: newBone,
-                  organ: newOrgan,
-                  selectedRatio: selectedRatio,
-                  isUserDefined: true, // Mark as user-defined when manually selected
+              onPress={async () => {
+                // Get the current temporary ratio values
+                const tempMeatRatio = await AsyncStorage.getItem("tempMeatRatio")
+                const tempBoneRatio = await AsyncStorage.getItem("tempBoneRatio")
+                const tempOrganRatio = await AsyncStorage.getItem("tempOrganRatio")
+                const tempSelectedRatio = await AsyncStorage.getItem("tempSelectedRatio")
+
+                let latestRatio
+
+                // Use temporary values if available, otherwise use state values
+                if (tempMeatRatio && tempBoneRatio && tempOrganRatio && tempSelectedRatio) {
+                  latestRatio = {
+                    meat: Number(tempMeatRatio),
+                    bone: Number(tempBoneRatio),
+                    organ: Number(tempOrganRatio),
+                    selectedRatio: tempSelectedRatio,
+                    isUserDefined: true,
+                  }
+                } else {
+                  latestRatio = {
+                    meat: newMeat,
+                    bone: newBone,
+                    organ: newOrgan,
+                    selectedRatio: selectedRatio,
+                    isUserDefined: true,
+                  }
                 }
 
                 console.log("Navigating to CS with latest ratio:", latestRatio)
@@ -616,7 +869,7 @@ const updateExistingRecipe = async (recipeId: string) => {
                   meat: totalMeat,
                   bone: totalBone,
                   organ: totalOrgan,
-                  ratio: latestRatio, // Ensure the latest ratio is passed
+                  ratio: latestRatio,
                 })
               }}
             >
@@ -646,8 +899,8 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     paddingVertical: vs(isSmallDevice ? 7 : 15),
     alignItems: "center",
-    marginTop: Platform.OS === "ios" ? (isSmallDevice ? 5 : -5) : 10,
-    marginBottom: Platform.OS === "ios" ? (isSmallDevice ? 5 : -5) : -4,
+    marginTop: Platform.OS === "ios" ? (isSmallDevice ? 5 : -10) : 10,
+    marginBottom: Platform.OS === "ios" ? (isSmallDevice ? 5 : -6) : -6,
   },
   topBarText: {
     fontSize: rs(isSmallDevice ? 20 : 22),
@@ -815,14 +1068,16 @@ const styles = StyleSheet.create({
     marginLeft: rs(4),
   },
   calculateButtonContainer: {
-    padding: rs(isSmallDevice ? 5 : 8),
+    padding: Platform.OS === "ios" ? 10 : rs(isSmallDevice ? 6 : 10),
+    paddingTop: Platform.OS === "ios" ? 8 : rs(isSmallDevice ? 3 : 8),
+    paddingBottom: Platform.OS === "ios" ? 5 : rs(isSmallDevice ? 3 : 5),
     borderTopWidth: 0.7,
     borderTopColor: "#ded8d7",
     backgroundColor: "white",
   },
   buttonRow: {
     flexDirection: "row",
-    marginBottom: vs(isSmallDevice ? 4 : 6),
+    marginBottom: Platform.OS === "ios" ? 4 : vs(isSmallDevice ? 2 : 4),
   },
   ingredientButton: {
     flex: 1,
@@ -884,3 +1139,4 @@ const styles = StyleSheet.create({
 })
 
 export default FoodInputScreen
+

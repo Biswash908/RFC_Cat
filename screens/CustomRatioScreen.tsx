@@ -1,3 +1,5 @@
+"use client";
+
 import type React from "react";
 import { useState, useEffect } from "react";
 import {
@@ -85,7 +87,8 @@ const CustomRatioScreen: React.FC = () => {
     return meatRatio + boneRatio + organRatio;
   };
 
-  // Modify the handleAddRatio function to save the custom ratio values separately
+  // Modify the handleAddRatio function to NOT update the recipe's ratio directly
+  // Instead, only update temporary storage and context
   const handleAddRatio = async () => {
     const totalRatio = calculateTotalRatio();
     const difference = totalRatio - 100;
@@ -124,18 +127,27 @@ const CustomRatioScreen: React.FC = () => {
       // Mark this as a user-selected ratio - critical for persistence
       await AsyncStorage.setItem("userSelectedRatio", "true");
 
-      // Save to global AsyncStorage for current session
+      // Save to global AsyncStorage for current session and temporary storage
       await AsyncStorage.multiSet([
+        // Regular ratio values (used for UI display)
         ["meatRatio", meatRatio.toString()],
         ["boneRatio", boneRatio.toString()],
         ["organRatio", organRatio.toString()],
         ["selectedRatio", "custom"],
+
+        // Custom ratio values (for future reference)
         ["customMeatRatio", meatRatio.toString()],
         ["customBoneRatio", boneRatio.toString()],
         ["customOrganRatio", organRatio.toString()],
+
+        // Temporary ratio values (separate from permanent recipe data)
+        ["tempMeatRatio", meatRatio.toString()],
+        ["tempBoneRatio", boneRatio.toString()],
+        ["tempOrganRatio", organRatio.toString()],
+        ["tempSelectedRatio", "custom"],
       ]);
 
-      console.log("🚀 Saving custom ratio:", {
+      console.log("🚀 Setting custom ratio (temporary):", {
         meat: meatRatio,
         bone: boneRatio,
         organ: organRatio,
@@ -149,65 +161,28 @@ const CustomRatioScreen: React.FC = () => {
         organ: organRatio,
       });
 
-      // If we have a recipe ID, save the custom ratio specifically for this recipe
-      if (recipeId) {
-        // Get all recipes
-        const storedRecipes = await AsyncStorage.getItem("recipes");
-        if (storedRecipes) {
-          const parsedRecipes = JSON.parse(storedRecipes);
-          const recipeIndex = parsedRecipes.findIndex((r) => r.id === recipeId);
+      // IMPORTANT: We're NOT updating the recipe's ratio here anymore
+      // That will only happen when the user explicitly saves the recipe
 
-          if (recipeIndex !== -1) {
-            // Update the recipe's ratio
-            parsedRecipes[recipeIndex].ratio = {
-              meat: meatRatio,
-              bone: boneRatio,
-              organ: organRatio,
-              selectedRatio: "custom",
-              isUserDefined: true,
-            };
+      // If we have a recipe ID and a selected recipe, update the temporary ratio in memory
+      if (recipeId && selectedRecipeStr) {
+        const selectedRecipe = JSON.parse(selectedRecipeStr);
 
-            // Also save the custom ratio values separately for this recipe
-            parsedRecipes[recipeIndex].savedCustomRatio = {
-              meat: meatRatio,
-              bone: boneRatio,
-              organ: organRatio,
-            };
+        // Only update the temporary ratio in memory, not in storage
+        selectedRecipe.tempRatio = {
+          meat: meatRatio,
+          bone: boneRatio,
+          organ: organRatio,
+          selectedRatio: "custom",
+          isUserDefined: true,
+          isTemporary: true,
+        };
 
-            // Save the updated recipes
-            await AsyncStorage.setItem(
-              "recipes",
-              JSON.stringify(parsedRecipes)
-            );
-            console.log(
-              `✅ Updated custom ratio for recipe "${parsedRecipes[recipeIndex].name}"`
-            );
-
-            // Also update the selectedRecipe in AsyncStorage
-            if (selectedRecipeStr) {
-              const selectedRecipe = JSON.parse(selectedRecipeStr);
-              selectedRecipe.ratio = {
-                meat: meatRatio,
-                bone: boneRatio,
-                organ: organRatio,
-                selectedRatio: "custom",
-                isUserDefined: true,
-              };
-
-              // Also save the custom ratio values separately
-              selectedRecipe.savedCustomRatio = {
-                meat: meatRatio,
-                bone: boneRatio,
-                organ: organRatio,
-              };
-
-              await AsyncStorage.setItem(
-                "selectedRecipe",
-                JSON.stringify(selectedRecipe)
-              );
-            }
-          }
-        }
+        // Save the updated selectedRecipe with the temporary ratio
+        await AsyncStorage.setItem(
+          "selectedRecipe",
+          JSON.stringify(selectedRecipe)
+        );
       }
 
       // Navigate back with the custom ratio
@@ -218,6 +193,7 @@ const CustomRatioScreen: React.FC = () => {
           organ: organRatio,
           selectedRatio: "custom",
           isUserDefined: true,
+          isTemporary: true, // Mark as temporary
         },
       });
     } catch (error) {

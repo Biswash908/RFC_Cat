@@ -12,7 +12,6 @@ import {
   Platform,
   KeyboardAvoidingView,
   ScrollView,
-  Dimensions,
 } from "react-native";
 import {
   useNavigation,
@@ -24,19 +23,6 @@ import { FontAwesome } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSaveContext } from "../SaveContext";
 import { useUnit } from "../UnitContext";
-
-// Add responsive sizing utilities
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
-const isSmallDevice = SCREEN_WIDTH < 375;
-const isIOS = Platform.OS === "ios";
-const scale = SCREEN_WIDTH / 375;
-const verticalScale = SCREEN_HEIGHT / 812;
-
-// Responsive sizing functions
-const rs = (size: number) =>
-  Math.round(size * (isIOS ? Math.min(scale, 1.2) : scale));
-const vs = (size: number) =>
-  Math.round(size * (isIOS ? Math.min(verticalScale, 1.2) : verticalScale));
 
 interface Ingredient {
   id: string;
@@ -221,13 +207,54 @@ const CalculatorScreen: React.FC = () => {
       setCurrentOrganWeight(route.params.organ);
   }, [route.params?.meat, route.params?.bone, route.params?.organ]);
 
+  // Add this function near the top of the component, after state declarations
   const initializeCorrectorsWithDefaultValues = () => {
-    console.log("🚀 Initializing correctors with zero values");
+    console.log("🚀 Initializing correctors with default values");
 
-    // Set all corrector values to zero on initial load
-    setMeatCorrect({ bone: 0, organ: 0 });
-    setBoneCorrect({ meat: 0, organ: 0 });
-    setOrganCorrect({ meat: 0, bone: 0 });
+    // Default values for a fresh launch - standard 80:10:10 ratio
+    const defaultMeat = 80;
+    const defaultBone = 10;
+    const defaultOrgan = 10;
+
+    // Use a sample weight of 100g with deliberate imbalance
+    const sampleMeatWeight = 85; // More meat than ideal
+    const sampleBoneWeight = 8; // Less bone than ideal
+    const sampleOrganWeight = 7; // Less organ than ideal
+
+    console.log("📊 Sample weights (with deliberate imbalance):", {
+      sampleMeatWeight,
+      sampleBoneWeight,
+      sampleOrganWeight,
+    });
+
+    // Calculate correctors based on these sample weights
+    const meatCorrect = {
+      bone: (sampleMeatWeight / defaultMeat) * defaultBone - sampleBoneWeight,
+      organ:
+        (sampleMeatWeight / defaultMeat) * defaultOrgan - sampleOrganWeight,
+    };
+
+    const boneCorrect = {
+      meat: (sampleBoneWeight / defaultBone) * defaultMeat - sampleMeatWeight,
+      organ:
+        (sampleBoneWeight / defaultBone) * defaultOrgan - sampleOrganWeight,
+    };
+
+    const organCorrect = {
+      meat: (sampleOrganWeight / defaultOrgan) * defaultMeat - sampleMeatWeight,
+      bone: (sampleOrganWeight / defaultOrgan) * defaultBone - sampleBoneWeight,
+    };
+
+    console.log("📊 Sample corrector values:", {
+      meatCorrect,
+      boneCorrect,
+      organCorrect,
+    });
+
+    // Set the corrector values
+    setMeatCorrect(meatCorrect);
+    setBoneCorrect(boneCorrect);
+    setOrganCorrect(organCorrect);
   };
 
   useEffect(() => {
@@ -499,146 +526,11 @@ const CalculatorScreen: React.FC = () => {
   // Modify the useFocusEffect callback to properly handle user selections
   // Replace the existing useFocusEffect with this improved version
 
-  // Modify the setRatio function to ensure temporary values are properly saved and loaded
-  // Replace the existing setRatio function with this version
-  const setRatio = (
-    meat: number,
-    bone: number,
-    organ: number,
-    ratio: string
-  ) => {
-    console.log(`✅ Setting ratio: ${ratio} (${meat}:${bone}:${organ})`);
-
-    // Update state
-    setNewMeat(meat);
-    setNewBone(bone);
-    setNewOrgan(organ);
-    setSelectedRatio(ratio);
-    setUserSelectedRatio(true); // Mark as manually selected
-
-    if (ratio === "custom") {
-      setCustomRatio({ meat, bone, organ });
-    }
-
-    // Save to AsyncStorage immediately - this is critical for UI persistence
-    const saveItems = [
-      // Regular ratio values (used for UI display)
-      ["meatRatio", meat.toString()],
-      ["boneRatio", bone.toString()],
-      ["organRatio", organ.toString()],
-      ["selectedRatio", ratio],
-      ["userSelectedRatio", "true"], // Add this to track user selection
-
-      // Temporary ratio values (separate from permanent recipe data)
-      ["tempMeatRatio", meat.toString()],
-      ["tempBoneRatio", bone.toString()],
-      ["tempOrganRatio", organ.toString()],
-      ["tempSelectedRatio", ratio],
-    ];
-
-    if (ratio === "custom") {
-      saveItems.push(
-        ["customMeatRatio", meat.toString()],
-        ["customBoneRatio", bone.toString()],
-        ["customOrganRatio", organ.toString()]
-      );
-    }
-
-    AsyncStorage.multiSet(saveItems)
-      .then(() => {
-        console.log("✅ Successfully saved ratio selection to AsyncStorage");
-
-        // Force recalculation of correctors immediately after setting ratio
-        if (
-          currentMeatWeight === 0 &&
-          currentBoneWeight === 0 &&
-          currentOrganWeight === 0
-        ) {
-          calculateSampleCorrectorsForFreshLaunch();
-        } else {
-          calculateCorrectors(
-            currentMeatWeight,
-            currentBoneWeight,
-            currentOrganWeight,
-            meat,
-            bone,
-            organ
-          );
-        }
-      })
-      .catch((error) => {
-        console.error("❌ Failed to save ratio selection:", error);
-      });
-
-    // Update the route params to pass the ratio values to home
-    // But don't update the recipe directly
-    navigation.setParams({
-      ratio: {
-        meat: meat,
-        bone: bone,
-        organ: organ,
-        selectedRatio: ratio,
-        isUserDefined: true,
-        isTemporary: true, // Mark as temporary
-      },
-    });
-  };
-
-  // Modify the useFocusEffect to prioritize loading temporary ratio values
   useFocusEffect(
     React.useCallback(() => {
       const loadRatios = async () => {
         try {
-          // First try to load temporary ratio values
-          const tempSelectedRatio = await AsyncStorage.getItem(
-            "tempSelectedRatio"
-          );
-          const tempMeatRatio = await AsyncStorage.getItem("tempMeatRatio");
-          const tempBoneRatio = await AsyncStorage.getItem("tempBoneRatio");
-          const tempOrganRatio = await AsyncStorage.getItem("tempOrganRatio");
-
-          // If we have temporary values, use them
-          if (
-            tempSelectedRatio &&
-            tempMeatRatio &&
-            tempBoneRatio &&
-            tempOrganRatio
-          ) {
-            console.log("🔄 Loading temporary ratio values:", {
-              tempSelectedRatio,
-              tempMeatRatio,
-              tempBoneRatio,
-              tempOrganRatio,
-            });
-
-            setSelectedRatio(tempSelectedRatio);
-            setNewMeat(Number(tempMeatRatio));
-            setNewBone(Number(tempBoneRatio));
-            setNewOrgan(Number(tempOrganRatio));
-
-            // IMPORTANT: For custom ratios, also update the customRatio state
-            if (tempSelectedRatio === "custom") {
-              setCustomRatio({
-                meat: Number(tempMeatRatio),
-                bone: Number(tempBoneRatio),
-                organ: Number(tempOrganRatio),
-              });
-            }
-
-            // Force recalculation with the loaded values
-            calculateCorrectors(
-              currentMeatWeight,
-              currentBoneWeight,
-              currentOrganWeight,
-              Number(tempMeatRatio),
-              Number(tempBoneRatio),
-              Number(tempOrganRatio)
-            );
-
-            return; // Exit early after loading temporary values
-          }
-
-          // If no temporary values, check for selected recipe
+          // First check if there's a selected recipe
           const selectedRecipeStr = await AsyncStorage.getItem(
             "selectedRecipe"
           );
@@ -674,10 +566,6 @@ const CalculatorScreen: React.FC = () => {
                 ["boneRatio", selectedRecipe.ratio.bone.toString()],
                 ["organRatio", selectedRecipe.ratio.organ.toString()],
                 ["selectedRatio", selectedRecipe.ratio.selectedRatio],
-                ["tempMeatRatio", selectedRecipe.ratio.meat.toString()],
-                ["tempBoneRatio", selectedRecipe.ratio.bone.toString()],
-                ["tempOrganRatio", selectedRecipe.ratio.organ.toString()],
-                ["tempSelectedRatio", selectedRecipe.ratio.selectedRatio],
               ]);
 
               // For custom ratios, also save to custom ratio keys
@@ -693,7 +581,8 @@ const CalculatorScreen: React.FC = () => {
             }
           }
 
-          // If no temporary values or recipe ratio, fall back to saved ratio
+          // IMPORTANT: Always check for saved ratio first, regardless of userSelectedRatio flag
+          // This ensures persistence of user selections even on fresh install
           const savedRatio = await AsyncStorage.getItem("selectedRatio");
           const savedMeat = await AsyncStorage.getItem("meatRatio");
           const savedBone = await AsyncStorage.getItem("boneRatio");
@@ -725,14 +614,6 @@ const CalculatorScreen: React.FC = () => {
                   bone: bone,
                   organ: organ,
                 });
-
-                // Also save as temporary values for consistency
-                await AsyncStorage.multiSet([
-                  ["tempMeatRatio", meat.toString()],
-                  ["tempBoneRatio", bone.toString()],
-                  ["tempOrganRatio", organ.toString()],
-                  ["tempSelectedRatio", "custom"],
-                ]);
               } else {
                 // If custom ratio has invalid values, default to 80:10:10
                 console.log(
@@ -749,10 +630,6 @@ const CalculatorScreen: React.FC = () => {
                   ["boneRatio", "10"],
                   ["organRatio", "10"],
                   ["selectedRatio", "80:10:10"],
-                  ["tempMeatRatio", "80"],
-                  ["tempBoneRatio", "10"],
-                  ["tempOrganRatio", "10"],
-                  ["tempSelectedRatio", "80:10:10"],
                 ]);
               }
             } else {
@@ -761,14 +638,6 @@ const CalculatorScreen: React.FC = () => {
               setNewMeat(Number(savedMeat) || 80);
               setNewBone(Number(savedBone) || 10);
               setNewOrgan(Number(savedOrgan) || 10);
-
-              // Also save as temporary values for consistency
-              await AsyncStorage.multiSet([
-                ["tempMeatRatio", savedMeat || "80"],
-                ["tempBoneRatio", savedBone || "10"],
-                ["tempOrganRatio", savedOrgan || "10"],
-                ["tempSelectedRatio", savedRatio],
-              ]);
             }
           } else {
             // If no saved ratio at all, default to 80:10:10
@@ -784,10 +653,6 @@ const CalculatorScreen: React.FC = () => {
               ["boneRatio", "10"],
               ["organRatio", "10"],
               ["selectedRatio", "80:10:10"],
-              ["tempMeatRatio", "80"],
-              ["tempBoneRatio", "10"],
-              ["tempOrganRatio", "10"],
-              ["tempSelectedRatio", "80:10:10"],
             ]);
           }
         } catch (error) {
@@ -796,7 +661,7 @@ const CalculatorScreen: React.FC = () => {
       };
 
       loadRatios();
-    }, [currentMeatWeight, currentBoneWeight, currentOrganWeight]) // Add weight dependencies to ensure correctors update
+    }, []) // Remove navigation dependency to prevent unnecessary reloads
   );
 
   useFocusEffect(
@@ -942,13 +807,66 @@ const CalculatorScreen: React.FC = () => {
     ])
   );
 
+  // Add a dedicated function for sample calculations on fresh launch
   const calculateSampleCorrectorsForFreshLaunch = () => {
-    console.log("📊 Setting correctors to zero for fresh launch");
+    console.log("📊 Calculating sample correctors for fresh launch");
 
-    // Set all corrector values to zero when no ingredients are present
-    const meatCorrect = { bone: 0, organ: 0 };
-    const boneCorrect = { meat: 0, organ: 0 };
-    const organCorrect = { meat: 0, bone: 0 };
+    // Use a sample weight of 100g for demonstration
+    const sampleWeight = 100;
+
+    // Create a deliberate imbalance in the sample weights to show meaningful corrections
+    // Instead of perfect ratio weights, we'll use weights that need correction
+    let sampleMeatWeight, sampleBoneWeight, sampleOrganWeight;
+
+    if (selectedRatio === "custom") {
+      // For custom ratio, use slightly imbalanced weights
+      sampleMeatWeight = ((sampleWeight * newMeat) / 100) * 1.2; // 20% more meat than ideal
+      sampleBoneWeight = ((sampleWeight * newBone) / 100) * 0.8; // 20% less bone than ideal
+      sampleOrganWeight = (sampleWeight * newOrgan) / 100; // Organ weight as expected
+    } else if (selectedRatio === "80:10:10") {
+      // For 80:10:10 ratio, use these sample weights
+      sampleMeatWeight = 85; // More meat than ideal
+      sampleBoneWeight = 8; // Less bone than ideal
+      sampleOrganWeight = 7; // Less organ than ideal
+    } else if (selectedRatio === "75:15:10") {
+      // For 75:15:10 ratio, use these sample weights
+      sampleMeatWeight = 80; // More meat than ideal
+      sampleBoneWeight = 12; // Less bone than ideal
+      sampleOrganWeight = 8; // Less organ than ideal
+    } else {
+      // Default case with imbalance
+      sampleMeatWeight = ((sampleWeight * newMeat) / 100) * 1.1;
+      sampleBoneWeight = ((sampleWeight * newBone) / 100) * 0.9;
+      sampleOrganWeight = (sampleWeight * newOrgan) / 100;
+    }
+
+    console.log("📊 Sample weights (with deliberate imbalance):", {
+      sampleMeatWeight,
+      sampleBoneWeight,
+      sampleOrganWeight,
+    });
+
+    // Calculate correctors based on these sample weights
+    const meatCorrect = {
+      bone: (sampleMeatWeight / newMeat) * newBone - sampleBoneWeight,
+      organ: (sampleMeatWeight / newMeat) * newOrgan - sampleOrganWeight,
+    };
+
+    const boneCorrect = {
+      meat: (sampleBoneWeight / newBone) * newMeat - sampleMeatWeight,
+      organ: (sampleBoneWeight / newBone) * newOrgan - sampleOrganWeight,
+    };
+
+    const organCorrect = {
+      meat: (sampleOrganWeight / newOrgan) * newMeat - sampleMeatWeight,
+      bone: (sampleOrganWeight / newOrgan) * newBone - sampleBoneWeight,
+    };
+
+    console.log("📊 Sample corrector values:", {
+      meatCorrect,
+      boneCorrect,
+      organCorrect,
+    });
 
     // Set the corrector values
     setMeatCorrect(meatCorrect);
@@ -956,6 +874,7 @@ const CalculatorScreen: React.FC = () => {
     setOrganCorrect(organCorrect);
   };
 
+  // Modify the calculateCorrectors function to handle zero values better
   function calculateCorrectors(
     meatWeight: number,
     boneWeight: number,
@@ -973,12 +892,9 @@ const CalculatorScreen: React.FC = () => {
       newOrgan,
     });
 
-    // If we have no weights at all (fresh launch or no ingredients), set all values to zero
+    // If we have no weights at all (fresh launch), use sample calculation
     if (meatWeight === 0 && boneWeight === 0 && organWeight === 0) {
-      console.log("📊 No ingredients detected, setting correctors to zero");
-      setMeatCorrect({ bone: 0, organ: 0 });
-      setBoneCorrect({ meat: 0, organ: 0 });
-      setOrganCorrect({ meat: 0, bone: 0 });
+      calculateSampleCorrectorsForFreshLaunch();
       return;
     }
 
@@ -1007,8 +923,162 @@ const CalculatorScreen: React.FC = () => {
     setOrganCorrect(organCorrect);
   }
 
-  // Modify the setRatio function to not update the recipe's ratio immediately
-  // Replace the existing setRatio function with this version
+  // Also modify the setRatio function to update the recipe's ratio
+  // Modify the setRatio function to ensure persistence
+  // Replace the existing setRatio function with this improved version
+
+  const setRatio = (
+    meat: number,
+    bone: number,
+    organ: number,
+    ratio: string
+  ) => {
+    console.log(`✅ Setting ratio: ${ratio} (${meat}:${bone}:${organ})`);
+
+    // Update state
+    setNewMeat(meat);
+    setNewBone(bone);
+    setNewOrgan(organ);
+    setSelectedRatio(ratio);
+    setUserSelectedRatio(true); // Mark as manually selected
+
+    if (ratio === "custom") {
+      setCustomRatio({ meat, bone, organ });
+    }
+
+    // Save to AsyncStorage immediately - this is critical for persistence
+    const saveItems = [
+      ["meatRatio", meat.toString()],
+      ["boneRatio", bone.toString()],
+      ["organRatio", organ.toString()],
+      ["selectedRatio", ratio],
+      ["userSelectedRatio", "true"], // Add this to track user selection
+    ];
+
+    if (ratio === "custom") {
+      saveItems.push(
+        ["customMeatRatio", meat.toString()],
+        ["customBoneRatio", bone.toString()],
+        ["customOrganRatio", organ.toString()]
+      );
+    }
+
+    AsyncStorage.multiSet(saveItems)
+      .then(() => {
+        console.log("✅ Successfully saved ratio selection to AsyncStorage");
+
+        // Force recalculation of correctors immediately after setting ratio
+        if (
+          currentMeatWeight === 0 &&
+          currentBoneWeight === 0 &&
+          currentOrganWeight === 0
+        ) {
+          calculateSampleCorrectorsForFreshLaunch();
+        } else {
+          calculateCorrectors(
+            currentMeatWeight,
+            currentBoneWeight,
+            currentOrganWeight,
+            meat,
+            bone,
+            organ
+          );
+        }
+      })
+      .catch((error) => {
+        console.error("❌ Failed to save ratio selection:", error);
+      });
+
+    // Update the route params to pass the ratio values to home
+    navigation.setParams({
+      ratio: {
+        meat: meat,
+        bone: bone,
+        organ: organ,
+        selectedRatio: ratio,
+        isUserDefined: true,
+      },
+    });
+
+    // Also update the selected recipe if one is loaded
+    const updateSelectedRecipe = async () => {
+      try {
+        const selectedRecipeStr = await AsyncStorage.getItem("selectedRecipe");
+        if (selectedRecipeStr) {
+          const selectedRecipe = JSON.parse(selectedRecipeStr);
+
+          // Update the selectedRecipe's ratio
+          selectedRecipe.ratio = {
+            meat: meat,
+            bone: bone,
+            organ: organ,
+            selectedRatio: ratio,
+            isUserDefined: true,
+          };
+
+          // If switching to custom ratio, also update savedCustomRatio
+          if (ratio === "custom") {
+            selectedRecipe.savedCustomRatio = {
+              meat: meat,
+              bone: bone,
+              organ: organ,
+            };
+          }
+
+          // If switching to a predefined ratio, preserve the existing savedCustomRatio
+          // (don't overwrite it)
+
+          await AsyncStorage.setItem(
+            "selectedRecipe",
+            JSON.stringify(selectedRecipe)
+          );
+
+          // Also update the ratio in the recipes array
+          const storedRecipes = await AsyncStorage.getItem("recipes");
+          if (storedRecipes) {
+            const parsedRecipes = JSON.parse(storedRecipes);
+            const recipeIndex = parsedRecipes.findIndex(
+              (r) => r.id === selectedRecipe.recipeId
+            );
+
+            if (recipeIndex !== -1) {
+              // Update the recipe's ratio
+              parsedRecipes[recipeIndex].ratio = {
+                meat: meat,
+                bone: bone,
+                organ: organ,
+                selectedRatio: ratio,
+                isUserDefined: true,
+              };
+
+              // If switching to custom ratio, also update savedCustomRatio
+              if (ratio === "custom") {
+                parsedRecipes[recipeIndex].savedCustomRatio = {
+                  meat: meat,
+                  bone: bone,
+                  organ: organ,
+                };
+              }
+              // If switching to a predefined ratio, preserve the existing savedCustomRatio
+              // (don't overwrite it)
+
+              // Save the updated recipes
+              await AsyncStorage.setItem(
+                "recipes",
+                JSON.stringify(parsedRecipes)
+              );
+              console.log(
+                `✅ Updated ratio for recipe "${selectedRecipe.recipeName}"`
+              );
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error updating selected recipe ratio:", error);
+      }
+    };
+    updateSelectedRecipe();
+  };
 
   const showRatioInfoAlert = () => {
     Alert.alert(
@@ -1033,26 +1103,10 @@ const CalculatorScreen: React.FC = () => {
     setUserSelectedRatio(false);
   };
 
-  // Updated formatWeight function to remove .00 for grams and make unit stick to number
   const formatWeight = (value: number, ingredient: string) => {
-    if (isNaN(value)) value = 0;
-
-    // Format the number based on unit
-    let formattedValue;
-    if (unit === "g") {
-      // For grams, show whole numbers if possible
-      formattedValue =
-        Math.abs(value) % 1 === 0
-          ? Math.abs(value).toFixed(0)
-          : Math.abs(value).toFixed(2);
-    } else {
-      // For kg and lbs, always show 2 decimal places
-      formattedValue = Math.abs(value).toFixed(2);
-    }
-
+    const formattedValue = isNaN(value) ? "0.00" : Math.abs(value).toFixed(2);
     const action = value > 0 ? "Add" : value < 0 ? "Remove" : "Add";
-    // Return with no space between number and unit
-    return `${action} ${formattedValue}${unit} of ${ingredient}`;
+    return `${action} ${formattedValue} ${unit} of ${ingredient}`;
   };
 
   const displayCustomRatio =
@@ -1086,7 +1140,7 @@ const CalculatorScreen: React.FC = () => {
               onPress={showRatioInfoAlert}
               style={styles.infoIcon}
             >
-              <FontAwesome name="info-circle" size={rs(20)} color="#000080" />
+              <FontAwesome name="info-circle" size={20} color="#000080" />
             </TouchableOpacity>
           </View>
           <View style={styles.ratioButtonsContainer}>
@@ -1158,7 +1212,7 @@ const CalculatorScreen: React.FC = () => {
               Use the corrector to achieve the intended ratio:
             </Text>
             <TouchableOpacity onPress={showInfoAlert} style={styles.infoIcon}>
-              <FontAwesome name="info-circle" size={rs(20)} color="#000080" />
+              <FontAwesome name="info-circle" size={20} color="#000080" />
             </TouchableOpacity>
           </View>
 
@@ -1219,7 +1273,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   ratioTitle: {
-    fontSize: rs(isSmallDevice ? 16 : 18),
+    fontSize: 18,
     fontWeight: "bold",
     textAlign: "left",
     flex: 1,
@@ -1239,8 +1293,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   ratioButton: {
-    paddingVertical: vs(10),
-    paddingHorizontal: rs(20),
+    paddingVertical: 10,
+    paddingHorizontal: 20,
     borderRadius: 8,
     borderWidth: 1,
     backgroundColor: "white",
@@ -1254,8 +1308,8 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     marginTop: 10,
     marginBottom: 20,
-    paddingVertical: vs(10),
-    paddingHorizontal: rs(50),
+    paddingVertical: 10,
+    paddingHorizontal: 50,
     borderRadius: 8,
     borderWidth: 1,
     backgroundColor: "white",
@@ -1267,11 +1321,11 @@ const styles = StyleSheet.create({
   },
   customButtonText: {
     color: "white",
-    fontSize: rs(isSmallDevice ? 14 : 16),
+    fontSize: 16,
     fontWeight: "600",
   },
   ratioButtonText: {
-    fontSize: rs(isSmallDevice ? 14 : 16),
+    fontSize: 16,
     fontWeight: "600",
     color: "black",
   },
@@ -1282,7 +1336,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   correctorInfoText: {
-    fontSize: rs(isSmallDevice ? 16 : 18),
+    fontSize: 18,
     color: "black",
     fontWeight: "bold",
     flex: 1,
@@ -1301,16 +1355,13 @@ const styles = StyleSheet.create({
     borderColor: "#4747f5",
   },
   correctorTitle: {
-    fontSize: rs(isSmallDevice ? 14 : 16),
+    fontSize: 16,
     fontWeight: "bold",
     marginBottom: 8,
   },
   correctorText: {
-    fontSize: rs(isSmallDevice ? 12 : 14),
+    fontSize: 14,
   },
-  meatCorrector: {},
-  boneCorrector: {},
-  organCorrector: {},
   applyButton: {
     backgroundColor: "#000080",
     paddingVertical: 12,
@@ -1321,7 +1372,7 @@ const styles = StyleSheet.create({
   },
   applyButtonText: {
     color: "white",
-    fontSize: rs(isSmallDevice ? 16 : 18),
+    fontSize: 18,
     fontWeight: "bold",
   },
 });
