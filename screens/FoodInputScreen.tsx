@@ -899,8 +899,12 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     paddingVertical: vs(isSmallDevice ? 7 : 15),
     alignItems: "center",
-    marginTop: Platform.OS === "ios" ? (isSmallDevice ? 5 : -10) : 10,
-    marginBottom: Platform.OS === "ios" ? (isSmallDevice ? 5 : -6) : -6,
+    marginTop: Platform.OS === "ios" 
+      ? (isSmallDevice ? 5 : -10) 
+      : (isSmallDevice ? 10 : 12), // Different values for small/big Android
+    marginBottom: Platform.OS === "ios" 
+      ? (isSmallDevice ? 5 : -5) 
+      : (isSmallDevice ? 2 : -6), // Different values for small/big Android
   },
   topBarText: {
     fontSize: rs(isSmallDevice ? 20 : 22),
@@ -952,7 +956,9 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   input: {
-    height: vs(40),
+    height: Platform.OS === "ios"
+    ? vs(40)
+    : vs(isSmallDevice ? 50 : 40),
     borderColor: "gray",
     borderWidth: 1,
     width: "100%",
@@ -1069,8 +1075,8 @@ const styles = StyleSheet.create({
   },
   calculateButtonContainer: {
     padding: Platform.OS === "ios" ? 10 : rs(isSmallDevice ? 6 : 10),
-    paddingTop: Platform.OS === "ios" ? 8 : rs(isSmallDevice ? 3 : 8),
-    paddingBottom: Platform.OS === "ios" ? 5 : rs(isSmallDevice ? 3 : 5),
+    paddingTop: Platform.OS === "ios" ? 8 : rs(isSmallDevice ? 7 : 8),
+    paddingBottom: Platform.OS === "ios" ? 3 : rs(isSmallDevice ? 4 : 4),
     borderTopWidth: 0.7,
     borderTopColor: "#ded8d7",
     backgroundColor: "white",

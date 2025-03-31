@@ -75,7 +75,7 @@ const HomeTabs = () => {
               <Text style={{ 
                 color: "white", 
                 fontSize: isIOS ? (isSmallDevice ? 8 : 10) : (isSmallDevice ? 10 : 12), //Bottom nav bar text
-                marginTop: isIOS && isSmallDevice ? 1 : 2
+                marginTop: isIOS && isSmallDevice ? 0 : 0
               }}>
                 {label}
               </Text>
@@ -86,7 +86,7 @@ const HomeTabs = () => {
         tabBarStyle: {
           backgroundColor: "#000080",
           paddingVertical: isIOS ? (isSmallDevice ? 0 : 3) : (isSmallDevice ? 2 : 5),
-          height: isIOS ? (isSmallDevice ? 40 : 75) : (isSmallDevice ? 45 : 60), //Bottom nav bar height
+          height: isIOS ? (isSmallDevice ? 40 : 50) : (isSmallDevice ? 45 : 55), //Bottom nav bar height
         },
       })}
     >
@@ -146,6 +146,10 @@ const App: React.FC = () => {
               headerStyle: {
                 height: isIOS && isSmallDevice ? 60 : undefined,
               },
+              // Add this to customize the back button text
+              headerBackTitle: "Back",
+              // If you want no text, use this instead:
+              // headerBackTitle: " ",
             }}
           >
             <Stack.Screen name="HomeTabs" component={HomeTabs} options={{ headerShown: false }} />
