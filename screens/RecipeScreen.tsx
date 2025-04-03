@@ -12,13 +12,24 @@ import {
   Platform,
   Modal,
   Alert,
+  Dimensions,
 } from "react-native"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { useFocusEffect, useNavigation } from "@react-navigation/native"
-import "react-native-get-random-values"
+import "react-native-get-random-values" // Required for UUID to work in React Native
 import { FontAwesome } from "@expo/vector-icons"
-import { v4 as uuidv4 } from "uuid"
-import axios from "axios"
+import { v4 as uuidv4 } from "uuid" // Importing UUID
+
+// Add responsive sizing utilities
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window")
+const isSmallDevice = SCREEN_WIDTH < 375
+const isIOS = Platform.OS === "ios"
+const scale = SCREEN_WIDTH / 375
+const verticalScale = SCREEN_HEIGHT / 812
+
+// Responsive sizing functions
+const rs = (size: number) => Math.round(size * (isIOS ? Math.min(scale, 1.2) : scale))
+const vs = (size: number) => Math.round(size * (isIOS ? Math.min(verticalScale, 1.2) : verticalScale))
 
 const RecipeScreen = ({ route }) => {
   const navigation = useNavigation()
@@ -231,8 +242,8 @@ const RecipeScreen = ({ route }) => {
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [recipeToEdit, setRecipeToEdit] = useState(null)
   const [ingredients, setIngredients] = useState([]) // Declare ingredients
-  const API_URL = "http://192.168.1.64:3000/api/saveState"
 
+  // Destructure `recipeName` and `recipeId` from route params if provided
   const { recipeName, recipeId } = route?.params || {}
 
   useEffect(() => {
@@ -251,18 +262,16 @@ const RecipeScreen = ({ route }) => {
         }
 
         const newRecipe = {
-          id: uuidv4(),
+          id: uuidv4(), // Use UUID for unique ID
           name: uniqueRecipeName,
-          ingredients: ingredients,
-          ratio: { meat: 75, bone: 15, organ: 10, selectedRatio: "75:15:10" }, // Save ratio as an object
+          ingredients: ingredients, // Assign the passed ingredients here
         }
 
-        // Save locally
+        // Add the new recipe to the list
         setRecipes((prevRecipes) => [...prevRecipes, newRecipe])
-        AsyncStorage.setItem("recipes", JSON.stringify([...recipes, newRecipe]))
 
-        // Save to the server
-        saveRecipeToServer(newRecipe.id, newRecipe.name)
+        // Save the updated recipes list to AsyncStorage
+        AsyncStorage.setItem("recipes", JSON.stringify([...recipes, newRecipe]))
 
         // Clear the params after adding the recipe
         navigation.setParams({ newRecipeName: null, ingredients: null })
@@ -300,7 +309,6 @@ const RecipeScreen = ({ route }) => {
           console.log("Error loading recipes: ", error)
         }
       }
-
       loadRecipes()
     }, []),
   )
@@ -384,16 +392,6 @@ const RecipeScreen = ({ route }) => {
     }
     saveRecipes()
   }, [recipes])
-
-  const updateRecipeInDatabase = async (recipe) => {
-    try {
-      // Send a PUT request to the API to update the recipe
-      const response = await axios.put(`${API_URL}/${recipe.id}`, recipe) // Replace with your API endpoint
-      console.log("Recipe updated in the database:", response.data)
-    } catch (error) {
-      console.error("Error updating recipe in the database:", error)
-    }
-  }
 
   // Helper function to create a deep copy of an object
   const deepCopy = (obj) => {
@@ -621,51 +619,6 @@ const RecipeScreen = ({ route }) => {
     ])
   }
 
-  const handleAddNewRecipe = () => {
-    if (newRecipeName.trim()) {
-      let uniqueRecipeName = newRecipeName.trim()
-      let counter = 1
-
-      while (recipes.some((recipe) => recipe.name === uniqueRecipeName)) {
-        uniqueRecipeName = `${newRecipeName.trim()}(${counter})`
-        counter++
-      }
-
-      const newRecipe = {
-        id: uuidv4(),
-        name: uniqueRecipeName,
-        ingredients: ingredients,
-        ratio: { meat: 75, bone: 15, organ: 10, selectedRatio: "75:15:10" }, // Save ratio as an object
-      }
-
-      setRecipes([...recipes, newRecipe])
-      setIsModalVisible(false)
-      setNewRecipeName("")
-    } else {
-      Alert.alert("Error", "Recipe name can't be empty.")
-    }
-  }
-
-  const saveRecipeToServer = async (recipeId, recipeName) => {
-    try {
-      const response = await fetch("http://192.168.1.64:3000/api/saveState", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ recipeId, recipeName }),
-      })
-
-      if (response.ok) {
-        console.log("Recipe saved successfully")
-      } else {
-        console.error("Failed to save recipe")
-      }
-    } catch (error) {
-      console.error("Error saving recipe:", error)
-    }
-  }
-
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -708,10 +661,7 @@ const RecipeScreen = ({ route }) => {
               onChangeText={setNewRecipeName}
             />
             <View style={styles.modalButtonsContainer}>
-              <TouchableOpacity
-                style={styles.saveButton}
-                onPress={recipeToEdit ? handleSaveEditedRecipe : handleAddNewRecipe}
-              >
+              <TouchableOpacity style={styles.saveButton} onPress={recipeToEdit ? handleSaveEditedRecipe : null}>
                 <Text style={styles.saveButtonText}>Save</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -772,27 +722,6 @@ const styles = StyleSheet.create({
     marginRight: 15,
   },
   deleteButton: {},
-  addButtonContainer: {
-    paddingHorizontal: 25,
-    justifyContent: "center",
-    paddingBottom: 20,
-    borderTopWidth: 0.7,
-    borderTopColor: "#ded8d7",
-  },
-  addNewRecipeButton: {
-    backgroundColor: "#000080",
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    borderRadius: 10,
-    marginBottom: 0,
-    marginTop: 20,
-    alignItems: "center",
-  },
-  addNewRecipeButtonText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "white",
-  },
   modalContainer: {
     flex: 1,
     justifyContent: "center",
@@ -854,4 +783,3 @@ const styles = StyleSheet.create({
 })
 
 export default RecipeScreen
-
