@@ -634,46 +634,41 @@ const FoodInputScreen: React.FC = () => {
   }
 
   const calculateTotals = (updatedIngredients: Ingredient[]) => {
-    // Initialize totals for meat, bone, and organ
+    let totalWt = 0
     let meatWeight = 0
     let boneWeight = 0
     let organWeight = 0
 
-    // Iterate through each ingredient to sum up component weights
     updatedIngredients.forEach((ing) => {
-      // Convert the ingredient's total weight to the global unit for calculations
-      const actualWeight = convertToUnit(ing.totalWeight, ing.unit, globalUnit) // [cite: 183]
+      const actualWeight = convertToUnit(ing.totalWeight, ing.unit, globalUnit)
+      totalWt += actualWeight
 
-      // Handle regular ingredients vs supplements differently
-      // Check if the ingredient is NOT a known bone supplement or marked as a supplement
+      // For regular ingredients, use the normal calculation
       if (ing.name !== "Bone Meal" && ing.name !== "Powdered Eggshell" && !ing.isSupplement) {
-        // For regular ingredients, add their meat, bone, and organ weights (converted to global unit) [cite: 184]
-        meatWeight += convertToUnit(ing.meatWeight, ing.unit, globalUnit) // [cite: 184]
-        boneWeight += convertToUnit(ing.boneWeight, ing.unit, globalUnit) // [cite: 184]
-        organWeight += convertToUnit(ing.organWeight, ing.unit, globalUnit) // [cite: 184]
+        meatWeight += convertToUnit(ing.meatWeight, ing.unit, globalUnit)
+        boneWeight += convertToUnit(ing.boneWeight, ing.unit, globalUnit)
+        organWeight += convertToUnit(ing.organWeight, ing.unit, globalUnit)
       } else {
-        // Handle supplements
+        // For supplements, calculate the bone equivalent
         if (ing.name === "Bone Meal") {
-          // Bone Meal's weight contributes entirely to bone, with a conversion factor
-          boneWeight += actualWeight * 4.16667 // [cite: 185]
+          // For Bone Meal, 1g is equivalent to 4.16667g of bone
+          boneWeight += actualWeight * 4.16667
         } else if (ing.name === "Powdered Eggshell") {
-           // Powdered Eggshell's weight contributes entirely to bone, with a different conversion factor [cite: 185]
-          boneWeight += actualWeight * 25 // [cite: 185]
+          // For Powdered Eggshell, 1g is equivalent to 25g of bone
+          boneWeight += actualWeight * 25
+        } else {
+          // For other supplements, use the normal calculation
+          meatWeight += (actualWeight * ing.meat) / 100
+          boneWeight += (actualWeight * ing.bone) / 100
+          organWeight += (actualWeight * ing.organ) / 100
         }
-        // Note: The original code had a section for 'other supplements'
-        // If you have other supplements that contribute to meat/bone/organ based on percentages,
-        // that logic would be added here. Assuming only the specific bone supplements for now.
       }
     })
 
-    // Calculate the grand total weight by summing the component totals
-    const grandTotalWeight = meatWeight + boneWeight + organWeight
-
-    // Update the state variables
-    setTotalWeight(grandTotalWeight) // Use the sum of components for the grand total [MODIFIED]
-    setTotalMeat(meatWeight) // [cite: 186]
-    setTotalBone(boneWeight) // [cite: 186]
-    setTotalOrgan(organWeight) // [cite: 186]
+    setTotalWeight(totalWt)
+    setTotalMeat(meatWeight)
+    setTotalBone(boneWeight)
+    setTotalOrgan(organWeight)
   }
 
   useEffect(() => {

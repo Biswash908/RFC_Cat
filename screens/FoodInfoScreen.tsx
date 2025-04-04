@@ -11,7 +11,9 @@ import {
   Platform,
   ScrollView,
   Dimensions,
+  Animated,
 } from "react-native"
+import { FontAwesome } from "@expo/vector-icons"
 import type { RouteProp } from "@react-navigation/native"
 import type { StackNavigationProp } from "@react-navigation/stack"
 import { useUnit } from "../UnitContext"
@@ -37,6 +39,7 @@ type RootStackParamList = {
       organ: number
       weight?: number
       unit: "g" | "kg" | "lbs"
+      isSupplement?: boolean
     }
     editMode: boolean
   }
@@ -53,6 +56,7 @@ type RootStackParamList = {
       organWeight: number
       totalWeight: number
       unit: "g" | "kg" | "lbs"
+      isSupplement?: boolean
     }
   }
 }
@@ -75,6 +79,12 @@ const FoodInfoScreen = ({ route, navigation }: Props) => {
   const [meatWeight, setMeatWeight] = useState(0)
   const [boneWeight, setBoneWeight] = useState(0)
   const [organWeight, setOrganWeight] = useState(0)
+  const [showTooltip, setShowTooltip] = useState(false)
+  const tooltipOpacity = useState(new Animated.Value(0))[0]
+
+  // Check if the ingredient is a supplement
+  const isSupplement =
+    ingredient.name === "Bone Meal" || ingredient.name === "Powdered Eggshell" || ingredient.isSupplement
 
   useEffect(() => {
     if (weight && !isNaN(Number.parseFloat(weight))) {
@@ -90,8 +100,21 @@ const FoodInfoScreen = ({ route, navigation }: Props) => {
   }, [weight, selectedUnit])
 
   const calculateWeights = (totalWeight: number) => {
+    // For regular ingredients, calculate weights normally
     setMeatWeight((totalWeight * ingredient.meat) / 100)
-    setBoneWeight((totalWeight * ingredient.bone) / 100)
+
+    // For bone weight, handle supplements specially
+    if (ingredient.name === "Bone Meal") {
+      // For display in the UI, we show the actual percentage
+      setBoneWeight((totalWeight * ingredient.bone) / 100)
+    } else if (ingredient.name === "Powdered Eggshell") {
+      // For display in the UI, we show the actual percentage
+      setBoneWeight((totalWeight * ingredient.bone) / 100)
+    } else {
+      // For regular ingredients, calculate normally
+      setBoneWeight((totalWeight * ingredient.bone) / 100)
+    }
+
     setOrganWeight((totalWeight * ingredient.organ) / 100)
   }
 
@@ -109,18 +132,73 @@ const FoodInfoScreen = ({ route, navigation }: Props) => {
     }
   }
 
+  const toggleTooltip = () => {
+    if (showTooltip) {
+      // Fade out
+      Animated.timing(tooltipOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start(() => {
+        setShowTooltip(false)
+      })
+    } else {
+      // Show and fade in
+      setShowTooltip(true)
+      Animated.timing(tooltipOpacity, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }).start()
+    }
+  }
+
+  // Auto-hide tooltip after 5 seconds
+  useEffect(() => {
+    let timer: NodeJS.Timeout
+    if (showTooltip) {
+      timer = setTimeout(() => {
+        Animated.timing(tooltipOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }).start(() => {
+          setShowTooltip(false)
+        })
+      }, 5000)
+    }
+    return () => {
+      if (timer) clearTimeout(timer)
+    }
+  }, [showTooltip, tooltipOpacity])
+
+  const getSupplementInfo = () => {
+    if (ingredient.name === "Bone Meal") {
+      return "Bone Meal is shown as 416.667% bone because it's a concentrated calcium and phosphorus supplement. This percentage reflects its equivalent calcium content compared to raw bone, not its actual weight."
+    } else if (ingredient.name === "Powdered Eggshell") {
+      return "Powdered Eggshell is listed as 2500% bone due to its extremely high calcium concentration. Just 1g can replace about 25g of raw bone, making it a potent bone substitute in boneless diets."
+    }
+    return ""
+  }
+
   const handleSaveIngredient = () => {
     const weightInGrams = convertWeight(Number.parseFloat(weight))
     const totalWeight = weightInGrams
 
+    // Calculate the actual weights based on percentages
+    const actualMeatWeight = (totalWeight * ingredient.meat) / 100
+    const actualBoneWeight = (totalWeight * ingredient.bone) / 100
+    const actualOrganWeight = (totalWeight * ingredient.organ) / 100
+
     const updatedIngredient = {
       ...ingredient,
       weight: weightInGrams,
-      meatWeight,
-      boneWeight,
-      organWeight,
+      meatWeight: actualMeatWeight,
+      boneWeight: actualBoneWeight,
+      organWeight: actualOrganWeight,
       totalWeight,
       unit: selectedUnit,
+      isSupplement: isSupplement,
     }
 
     setUnit(selectedUnit)
@@ -153,7 +231,10 @@ const FoodInfoScreen = ({ route, navigation }: Props) => {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>{ingredient.name}</Text>
+        <Text style={styles.title}>
+          {ingredient.name}
+          {isSupplement && <Text style={styles.supplementLabel}> (Supplement)</Text>}
+        </Text>
         <View style={styles.underline} />
 
         <TextInput
@@ -185,9 +266,29 @@ const FoodInfoScreen = ({ route, navigation }: Props) => {
           <Text style={styles.resultText}>
             Meat: {ingredient.meat}% - {formatWeight(meatWeight, selectedUnit)}
           </Text>
-          <Text style={styles.resultText}>
-            Bone: {ingredient.bone}% - {formatWeight(boneWeight, selectedUnit)}
-          </Text>
+          <View style={styles.boneRow}>
+            <Text style={styles.resultText}>
+              Bone: {ingredient.bone}% - {formatWeight(boneWeight, selectedUnit)}
+            </Text>
+
+            {isSupplement && (
+              <View style={styles.tooltipContainer}>
+                <TouchableOpacity onPress={toggleTooltip} style={styles.infoButton}>
+                  <FontAwesome name="info-circle" size={20} color="#000080" />
+                </TouchableOpacity>
+
+                {showTooltip && (
+                  <>
+                    <TouchableOpacity style={styles.tooltipOverlay} activeOpacity={1} onPress={toggleTooltip} />
+                    <Animated.View style={[styles.tooltip, { opacity: tooltipOpacity }]}>
+                      <Text style={styles.tooltipText}>{getSupplementInfo()}</Text>
+                      <View style={styles.tooltipArrow} />
+                    </Animated.View>
+                  </>
+                )}
+              </View>
+            )}
+          </View>
           <Text style={styles.resultText}>
             Organ: {ingredient.organ}% - {formatWeight(organWeight, selectedUnit)}
           </Text>
@@ -210,6 +311,11 @@ const styles = StyleSheet.create({
     fontSize: rs(isSmallDevice ? 20 : 24),
     fontWeight: "bold",
     textAlign: "center",
+  },
+  supplementLabel: {
+    fontSize: rs(isSmallDevice ? 16 : 18),
+    fontStyle: "italic",
+    color: "#000080",
   },
   underline: {
     height: 2,
@@ -253,6 +359,62 @@ const styles = StyleSheet.create({
   resultText: {
     fontSize: rs(isSmallDevice ? 16 : 18),
     marginVertical: 5,
+  },
+  boneRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    position: "relative", // For positioning the tooltip
+  },
+  infoButton: {
+    marginLeft: 10,
+    padding: 5,
+  },
+  tooltipContainer: {
+    position: "relative",
+  },
+  tooltipOverlay: {
+    position: "absolute",
+    top: -1000,
+    left: -1000,
+    width: 3000,
+    height: 3000,
+    backgroundColor: "transparent",
+    zIndex: 999,
+  },
+  tooltip: {
+    position: "absolute",
+    backgroundColor: "#e3f2fd",
+    borderRadius: 6,
+    padding: 10,
+    width: SCREEN_WIDTH * 0.7,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: "#000080",
+    top: 30,
+    right: -100, // Positioned to the right
+    zIndex: 1000,
+  },
+  tooltipText: {
+    fontSize: rs(isSmallDevice ? 12 : 14),
+    color: "#333",
+  },
+  tooltipArrow: {
+    position: "absolute",
+    top: -10,
+    right: 105, // Aligned with the info icon
+    width: 0,
+    height: 0,
+    borderLeftWidth: 10,
+    borderRightWidth: 10,
+    borderBottomWidth: 10,
+    borderLeftColor: "transparent",
+    borderRightColor: "transparent",
+    borderBottomColor: "#000080",
   },
   button: {
     marginTop: 20,
