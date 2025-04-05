@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
     elevation: 5,
     borderWidth: 1,
     borderColor: "#000080",
-    top: 30,
+    top: 33,
     right: -100, // Positioned to the right
     zIndex: 1000,
   },
@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
   tooltipArrow: {
     position: "absolute",
     top: -10,
-    right: 105, // Aligned with the info icon
+    right: 103, // Aligned with the info icon
     width: 0,
     height: 0,
     borderLeftWidth: 10,
