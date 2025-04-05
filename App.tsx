@@ -138,7 +138,7 @@ const App: React.FC = () => {
     const prepare = async () => {
       try {
         // Simulate a delay (e.g., 2 seconds)
-        await new Promise(resolve => setTimeout(resolve, 2000))
+        await new Promise(resolve => setTimeout(resolve, 3000))
       } catch (e) {
         console.warn(e)
       } finally {

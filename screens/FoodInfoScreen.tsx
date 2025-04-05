@@ -233,7 +233,6 @@ const FoodInfoScreen = ({ route, navigation }: Props) => {
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>
           {ingredient.name}
-          {isSupplement && <Text style={styles.supplementLabel}> (Supplement)</Text>}
         </Text>
         <View style={styles.underline} />
 
