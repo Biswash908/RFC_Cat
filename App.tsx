@@ -1,4 +1,12 @@
-"use client"
+"use client";
+
+if (!__DEV__) {
+  console.log = () => {};
+  console.warn = () => {};
+  console.error = () => {};
+  console.info = () => {};
+  console.debug = () => {};
+}
 
 import type React from "react"
 import { NavigationContainer } from "@react-navigation/native"
@@ -51,9 +59,6 @@ export type RootStackParamList = {
   RawFeedingFAQScreen: undefined
   InfoAndSupportScreen: undefined
   RecipeScreen: undefined
-  RecipeFoodInfoScreen: undefined
-  RecipeSearchScreen: undefined
-  RecipeContentScreen: undefined
 }
 
 const Stack = createStackNavigator<RootStackParamList>()
@@ -185,18 +190,7 @@ const App: React.FC = () => {
               <Stack.Screen name="HomeTabs" component={HomeTabs} options={{ headerShown: false }} />
               <Stack.Screen name="FoodInfoScreen" component={FoodInfoScreen} options={{ title: "Food Information" }} />
               <Stack.Screen name="SearchScreen" component={SearchScreen} options={{ title: "Search Ingredients" }} />
-              <Stack.Screen
-                name="RecipeFoodInfoScreen"
-                component={RecipeFoodInfoScreen}
-                options={{ title: "Food Information" }}
-              />
-              <Stack.Screen
-                name="RecipeSearchScreen"
-                component={RecipeSearchScreen}
-                options={{ title: "Search Ingredients" }}
-              />
               <Stack.Screen name="CalculatorScreen" component={CalculatorScreen} />
-              <Stack.Screen name="RecipeContentScreen" component={RecipeContentScreen} />
               <Stack.Screen
                 name="CustomRatioScreen"
                 component={CustomRatioScreen}
