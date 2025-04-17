@@ -1033,27 +1033,25 @@ const CalculatorScreen: React.FC = () => {
     setUserSelectedRatio(false);
   };
 
-  // Updated formatWeight function to remove .00 for grams and make unit stick to number
-  const formatWeight = (value: number, ingredient: string) => {
-    if (isNaN(value)) value = 0;
+  // Updated formatWeight function to handle Infinity values
+const formatWeight = (value: number, ingredient: string) => {
+  // Handle NaN and Infinity values
+  if (isNaN(value) || !isFinite(value)) value = 0;
 
-    // Format the number based on unit
-    let formattedValue;
-    if (unit === "g") {
-      // For grams, show whole numbers if possible
-      formattedValue =
-        Math.abs(value) % 1 === 0
-          ? Math.abs(value).toFixed(0)
-          : Math.abs(value).toFixed(2);
-    } else {
-      // For kg and lbs, always show 2 decimal places
-      formattedValue = Math.abs(value).toFixed(2);
-    }
+  // Format the number based on unit
+  let formattedValue;
+  if (unit === "g") {
+    // For grams, show whole numbers if possible
+    formattedValue = Math.abs(value) % 1 === 0 ? Math.abs(value).toFixed(0) : Math.abs(value).toFixed(2);
+  } else {
+    // For kg and lbs, always show 2 decimal places
+    formattedValue = Math.abs(value).toFixed(2);
+  }
 
-    const action = value > 0 ? "Add" : value < 0 ? "Remove" : "Add";
-    // Return with no space between number and unit
-    return `${action} ${formattedValue}${unit} of ${ingredient}`;
-  };
+  const action = value > 0 ? "Add" : value < 0 ? "Remove" : "Add";
+  // Return with no space between number and unit
+  return `${action} ${formattedValue}${unit} of ${ingredient}`;
+}
 
   const displayCustomRatio =
     selectedRatio === "custom" &&
