@@ -2,7 +2,7 @@
   "expo": {
     "name": "Raw Feeding Calc for Cats",
     "slug": "make-things-unlimited-cat-calc",
-    "version": "1.1.1",
+    "version": "1.2.2",
     "orientation": "portrait",
     "icon": "./assets/Icon.png",
     "userInterfaceStyle": "light",
@@ -13,13 +13,18 @@
     "updates": {
       "fallbackToCacheTimeout": 0
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "package": "com.MakeThingsUnlimited.CatCalc",
-      "versionCode": 28,
+      "versionCode": 31,
+      "compileSdkVersion": 35,
+      "targetSdkVersion": 35,
+      "minSdkVersion": 24,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
@@ -32,6 +37,9 @@
       "eas": {
         "projectId": "a859cd8e-eb5d-4fee-a935-8bb9bf5809bc"
       }
-    }
+    },
+    "plugins": [
+      "expo-font"
+    ]
   }
 }
