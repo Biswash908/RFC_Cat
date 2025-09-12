@@ -8,115 +8,112 @@ if (!__DEV__) {
   console.debug = () => {};
 }
 
-import type React from "react"
-import { NavigationContainer } from "@react-navigation/native"
-import { createStackNavigator } from "@react-navigation/stack"
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
-import { Text, View, Platform, Dimensions, StatusBar } from "react-native"
-import FontAwesome6 from "react-native-vector-icons/FontAwesome6"
-import FoodInputScreen from "./screens/FoodInputScreen"
-import FoodInfoScreen from "./screens/FoodInfoScreen"
-import SearchScreen from "./screens/SearchScreen"
-import CalculatorScreen from "./screens/CalculatorScreen"
-import InfoAndSupportScreen from "./screens/InfoAndSupportScreen" // Merged screen
-import RecipeScreen from "./screens/RecipeScreen" // Recipe screen
-import CustomRatioScreen from "./screens/CustomRatioScreen"
-import FAQScreen from "./screens/FAQScreen"
-import RawFeedingFAQScreen from "./screens/RawFeedingFAQScreen"
-import { UnitProvider } from "./UnitContext"
-import { SaveProvider } from "./SaveContext"
+import type React from "react";
+import { NavigationContainer } from "@react-navigation/native";
+import { createStackNavigator } from "@react-navigation/stack";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { Text, View, StatusBar } from "react-native";
+import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
+import FontAwesome6 from "react-native-vector-icons/FontAwesome6";
 
-// Add responsive sizing utilities
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window")
-const isSmallDevice = SCREEN_WIDTH < 375
-const isIOS = Platform.OS === "ios"
-const scale = SCREEN_WIDTH / 375
-const rs = (size: number) => Math.round(size * (isIOS ? Math.min(scale, 1.2) : scale))
+import FoodInputScreen from "./screens/FoodInputScreen";
+import FoodInfoScreen from "./screens/FoodInfoScreen";
+import SearchScreen from "./screens/SearchScreen";
+import CalculatorScreen from "./screens/CalculatorScreen";
+import InfoAndSupportScreen from "./screens/InfoAndSupportScreen";
+import RecipeScreen from "./screens/RecipeScreen";
+import CustomRatioScreen from "./screens/CustomRatioScreen";
+import FAQScreen from "./screens/FAQScreen";
+import RawFeedingFAQScreen from "./screens/RawFeedingFAQScreen";
+
+import { UnitProvider } from "./UnitContext";
+import { SaveProvider } from "./SaveContext";
 
 // Define the ingredient type
 interface Ingredient {
-  name: string
-  // Add other properties of Ingredient as needed
+  name: string;
 }
 
 // Define the stack's parameter list
 export type RootStackParamList = {
-  FoodInputScreen: { fromRecipe?: boolean } // Added fromRecipe param
-  FoodInfoScreen: { ingredient: Ingredient; editMode: boolean }
-  SearchScreen: undefined
-  CalculatorScreen: { meat: number; bone: number; organ: number }
+  FoodInputScreen: { fromRecipe?: boolean };
+  FoodInfoScreen: { ingredient: Ingredient; editMode: boolean };
+  SearchScreen: undefined;
+  CalculatorScreen: { meat: number; bone: number; organ: number };
   CustomRatioScreen: {
-    onSave?: (meat: number, bone: number, organ: number, plantMatter: number, includePlantMatter: boolean) => void
-    currentValues?: {
-      meat: number
-      bone: number
-      organ: number
-      plantMatter: number
+    onSave?: (
+      meat: number,
+      bone: number,
+      organ: number,
+      plantMatter: number,
       includePlantMatter: boolean
-    }
-  }
-  FAQScreen: undefined
-  RawFeedingFAQScreen: undefined
-  InfoAndSupportScreen: undefined
-  RecipeScreen: undefined
-}
+    ) => void;
+    currentValues?: {
+      meat: number;
+      bone: number;
+      organ: number;
+      plantMatter: number;
+      includePlantMatter: boolean;
+    };
+  };
+  FAQScreen: undefined;
+  RawFeedingFAQScreen: undefined;
+  InfoAndSupportScreen: undefined;
+  RecipeScreen: undefined;
+};
 
-const Stack = createStackNavigator<RootStackParamList>()
-const Tab = createBottomTabNavigator()
+const Stack = createStackNavigator<RootStackParamList>();
+const Tab = createBottomTabNavigator();
 
 // Bottom Tab Navigator (Home, Info & Support, Recipe)
 const HomeTabs = () => {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       initialRouteName="Home"
       screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused }) => {
-          let iconName
-          let label
+        tabBarIcon: () => {
+          let iconName: string;
+          let label: string;
 
           if (route.name === "Home") {
-            iconName = "house"
-            label = "Home"
+            iconName = "house";
+            label = "Home";
           } else if (route.name === "InfoAndSupport") {
-            iconName = "gear"
-            label = "Support"
+            iconName = "gear";
+            label = "Support";
           } else if (route.name === "Recipe") {
-            iconName = "book"
-            label = "Recipes"
+            iconName = "book";
+            label = "Recipes";
           }
 
           return (
-            <View
-              style={{
-                alignItems: "center",
-                justifyContent: "center",
-                height: isIOS ? (isSmallDevice ? 30 : 40) : isSmallDevice ? 40 : 50,
-              }}
-            >
+            <View style={{ alignItems: "center", justifyContent: "center" }}>
               <FontAwesome6
                 name={iconName}
-                size={isIOS ? (isSmallDevice ? 18 : 24) : isSmallDevice ? 22 : 26} //Bottom nav bar icons
+                size={22}
                 color={"white"}
                 style={{ textAlign: "center" }}
               />
               <Text
                 style={{
                   color: "white",
-                  fontSize: isIOS ? (isSmallDevice ? 8 : 10) : isSmallDevice ? 10 : 12, //Bottom nav bar text
-                  marginTop: isIOS && isSmallDevice ? 0 : 0,
+                  fontSize: 10,
+                  marginTop: 2,
                   fontFamily: "Roboto-Regular",
                 }}
               >
                 {label}
               </Text>
             </View>
-          )
+          );
         },
         tabBarShowLabel: false,
         tabBarStyle: {
           backgroundColor: "#000080",
-          paddingVertical: isIOS ? (isSmallDevice ? 0 : 3) : isSmallDevice ? 2 : 5,
-          height: isIOS ? (isSmallDevice ? 40 : 50) : isSmallDevice ? 45 : 55, //Bottom nav bar height
+          height: 60 + insets.bottom, // dynamic height
+          paddingBottom: insets.bottom, // safe area padding
         },
       })}
     >
@@ -128,10 +125,9 @@ const HomeTabs = () => {
           headerTitleAlign: "center",
           headerStyle: {
             backgroundColor: "white",
-            height: isIOS && isSmallDevice ? 60 : undefined,
           },
           headerTitleStyle: {
-            fontSize: isIOS ? (isSmallDevice ? 16 : 22) : rs(isSmallDevice ? 18 : 25),
+            fontSize: 20,
             fontWeight: "600",
             color: "black",
             fontFamily: "Roboto-Medium",
@@ -147,10 +143,9 @@ const HomeTabs = () => {
           headerTitleAlign: "center",
           headerStyle: {
             backgroundColor: "white",
-            height: isIOS && isSmallDevice ? 60 : undefined,
           },
           headerTitleStyle: {
-            fontSize: isIOS ? (isSmallDevice ? 16 : 22) : rs(isSmallDevice ? 18 : 25),
+            fontSize: 20,
             fontWeight: "600",
             color: "black",
             fontFamily: "Roboto-Medium",
@@ -158,12 +153,12 @@ const HomeTabs = () => {
         }}
       />
     </Tab.Navigator>
-  )
-}
+  );
+};
 
 const App: React.FC = () => {
   return (
-    <View style={{ flex: 1 }}>
+    <SafeAreaProvider>
       <StatusBar barStyle="dark-content" backgroundColor="white" />
       <UnitProvider>
         <SaveProvider>
@@ -172,24 +167,29 @@ const App: React.FC = () => {
               initialRouteName="HomeTabs"
               screenOptions={{
                 headerTitleStyle: {
-                  fontSize: isIOS ? (isSmallDevice ? 16 : 20) : rs(isSmallDevice ? 18 : 22),
+                  fontSize: 20,
                   fontWeight: "600",
                   color: "black",
                   fontFamily: "Roboto-Medium",
                 },
                 headerTitleAlign: "center",
                 headerStyle: {
-                  height: isIOS && isSmallDevice ? 60 : undefined,
+                  backgroundColor: "white",
                 },
-                // Add this to customize the back button text
                 headerBackTitle: "Back",
-                // If you want no text, use this instead:
-                // headerBackTitle: " ",
               }}
             >
               <Stack.Screen name="HomeTabs" component={HomeTabs} options={{ headerShown: false }} />
-              <Stack.Screen name="FoodInfoScreen" component={FoodInfoScreen} options={{ title: "Food Information" }} />
-              <Stack.Screen name="SearchScreen" component={SearchScreen} options={{ title: "Search Ingredients" }} />
+              <Stack.Screen
+                name="FoodInfoScreen"
+                component={FoodInfoScreen}
+                options={{ title: "Food Information" }}
+              />
+              <Stack.Screen
+                name="SearchScreen"
+                component={SearchScreen}
+                options={{ title: "Search Ingredients" }}
+              />
               <Stack.Screen name="CalculatorScreen" component={CalculatorScreen} />
               <Stack.Screen
                 name="CustomRatioScreen"
@@ -198,7 +198,6 @@ const App: React.FC = () => {
               />
               <Stack.Screen name="InfoAndSupportScreen" component={InfoAndSupportScreen} />
               <Stack.Screen name="RecipeScreen" component={RecipeScreen} />
-
               <Stack.Screen name="FAQScreen" component={FAQScreen} options={{ title: "App FAQs" }} />
               <Stack.Screen
                 name="RawFeedingFAQScreen"
@@ -209,8 +208,8 @@ const App: React.FC = () => {
           </NavigationContainer>
         </SaveProvider>
       </UnitProvider>
-    </View>
-  )
-}
+    </SafeAreaProvider>
+  );
+};
 
-export default App
+export default App;
