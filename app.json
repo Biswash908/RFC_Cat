@@ -1,47 +1,31 @@
 {
   "expo": {
-    "name": "Raw Feeding Calc for Cats",
-    "slug": "make-things-unlimited-cat-calc",
-    "version": "1.2.5",
+    "name": "Batch Planner",
+    "slug": "batchplanner",
+    "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/Icon.png",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "updates": {
-      "fallbackToCacheTimeout": 0
-    },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.MakeThingsUnlimited.CatCalc",
-      "buildNumber": "1.0.6",
-      "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
-      }
+      "bundleIdentifier": "com.batchplanner.app"
     },
     "android": {
-      "package": "com.MakeThingsUnlimited.CatCalc",
-      "versionCode": 41,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#FFFFFF"
-      }
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.batchplanner.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "extra": {
-      "eas": {
-        "projectId": "a859cd8e-eb5d-4fee-a935-8bb9bf5809bc"
-      }
-    },
-    "plugins": [
-      "expo-font"
-    ]
+    "plugins": [["expo-font"]]
   }
 }

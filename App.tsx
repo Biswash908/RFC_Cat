@@ -1,101 +1,82 @@
-"use client";
+"use client"
+import type React from "react"
+import { NavigationContainer } from "@react-navigation/native"
+import { createStackNavigator } from "@react-navigation/stack"
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
+import { Text, View, StatusBar } from "react-native"
+import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context"
+import FontAwesome6 from "react-native-vector-icons/FontAwesome6"
 
-if (!__DEV__) {
-  console.log = () => {};
-  console.warn = () => {};
-  console.error = () => {};
-  console.info = () => {};
-  console.debug = () => {};
-}
+import FoodInputScreen from "./src/screens/FoodInputScreen"
+import FoodInfoScreen from "./src/screens/FoodInfoScreen"
+import SearchScreen from "./src/screens/SearchScreen"
+import CalculatorScreen from "./src/screens/CalculatorScreen"
+import InfoAndSupportScreen from "./src/screens/InfoAndSupportScreen"
+import RecipeScreen from "./src/screens/RecipeScreen"
+import CustomRatioScreen from "./src/screens/CustomRatioScreen"
+import FAQScreen from "./src/screens/FAQScreen"
+import RawFeedingFAQScreen from "./src/screens/RawFeedingFAQScreen"
 
-import type React from "react";
-import { NavigationContainer } from "@react-navigation/native";
-import { createStackNavigator } from "@react-navigation/stack";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Text, View, StatusBar } from "react-native";
-import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
-import FontAwesome6 from "react-native-vector-icons/FontAwesome6";
-
-import FoodInputScreen from "./screens/FoodInputScreen";
-import FoodInfoScreen from "./screens/FoodInfoScreen";
-import SearchScreen from "./screens/SearchScreen";
-import CalculatorScreen from "./screens/CalculatorScreen";
-import InfoAndSupportScreen from "./screens/InfoAndSupportScreen";
-import RecipeScreen from "./screens/RecipeScreen";
-import CustomRatioScreen from "./screens/CustomRatioScreen";
-import FAQScreen from "./screens/FAQScreen";
-import RawFeedingFAQScreen from "./screens/RawFeedingFAQScreen";
-
-import { UnitProvider } from "./UnitContext";
-import { SaveProvider } from "./SaveContext";
+import { UnitProvider } from "./src/context/UnitContext"
+import { SaveProvider } from "./src/context/SaveContext"
+import { RecipeProvider } from "./src/context/RecipeContext"
 
 // Define the ingredient type
 interface Ingredient {
-  name: string;
+  name: string
 }
 
 // Define the stack's parameter list
 export type RootStackParamList = {
-  FoodInputScreen: { fromRecipe?: boolean };
-  FoodInfoScreen: { ingredient: Ingredient; editMode: boolean };
-  SearchScreen: undefined;
-  CalculatorScreen: { meat: number; bone: number; organ: number };
+  FoodInputScreen: { fromRecipe?: boolean }
+  FoodInfoScreen: { ingredient: Ingredient; editMode: boolean }
+  SearchScreen: undefined
+  CalculatorScreen: { meat: number; bone: number; organ: number }
   CustomRatioScreen: {
-    onSave?: (
-      meat: number,
-      bone: number,
-      organ: number,
-      plantMatter: number,
-      includePlantMatter: boolean
-    ) => void;
+    onSave?: (meat: number, bone: number, organ: number, plantMatter: number, includePlantMatter: boolean) => void
     currentValues?: {
-      meat: number;
-      bone: number;
-      organ: number;
-      plantMatter: number;
-      includePlantMatter: boolean;
-    };
-  };
-  FAQScreen: undefined;
-  RawFeedingFAQScreen: undefined;
-  InfoAndSupportScreen: undefined;
-  RecipeScreen: undefined;
-};
+      meat: number
+      bone: number
+      organ: number
+      plantMatter: number
+      includePlantMatter: boolean
+    }
+  }
+  FAQScreen: undefined
+  RawFeedingFAQScreen: undefined
+  InfoAndSupportScreen: undefined
+  RecipeScreen: undefined
+}
 
-const Stack = createStackNavigator<RootStackParamList>();
-const Tab = createBottomTabNavigator();
+const Stack = createStackNavigator<RootStackParamList>()
+const Tab = createBottomTabNavigator()
 
 // Bottom Tab Navigator (Home, Info & Support, Recipe)
 const HomeTabs = () => {
-  const insets = useSafeAreaInsets();
+  const insets = useSafeAreaInsets()
 
   return (
     <Tab.Navigator
       initialRouteName="Home"
       screenOptions={({ route }) => ({
         tabBarIcon: () => {
-          let iconName: string;
-          let label: string;
+          let iconName: string
+          let label: string
 
           if (route.name === "Home") {
-            iconName = "house";
-            label = "Home";
+            iconName = "house"
+            label = "Home"
           } else if (route.name === "InfoAndSupport") {
-            iconName = "gear";
-            label = "Support";
+            iconName = "gear"
+            label = "Support"
           } else if (route.name === "Recipe") {
-            iconName = "book";
-            label = "Recipes";
+            iconName = "book"
+            label = "Recipes"
           }
 
           return (
             <View style={{ alignItems: "center", justifyContent: "center" }}>
-              <FontAwesome6
-                name={iconName}
-                size={22}
-                color={"white"}
-                style={{ textAlign: "center" }}
-              />
+              <FontAwesome6 name={iconName} size={22} color={"white"} style={{ textAlign: "center" }} />
               <Text
                 style={{
                   color: "white",
@@ -107,13 +88,13 @@ const HomeTabs = () => {
                 {label}
               </Text>
             </View>
-          );
+          )
         },
         tabBarShowLabel: false,
         tabBarStyle: {
           backgroundColor: "#000080",
-          height: 60 + insets.bottom, // dynamic height
-          paddingBottom: insets.bottom, // safe area padding
+          height: 60 + insets.bottom,
+          paddingBottom: insets.bottom,
         },
       })}
     >
@@ -153,8 +134,8 @@ const HomeTabs = () => {
         }}
       />
     </Tab.Navigator>
-  );
-};
+  )
+}
 
 const App: React.FC = () => {
   return (
@@ -162,54 +143,52 @@ const App: React.FC = () => {
       <StatusBar barStyle="dark-content" backgroundColor="white" />
       <UnitProvider>
         <SaveProvider>
-          <NavigationContainer>
-            <Stack.Navigator
-              initialRouteName="HomeTabs"
-              screenOptions={{
-                headerTitleStyle: {
-                  fontSize: 20,
-                  fontWeight: "600",
-                  color: "black",
-                  fontFamily: "Roboto-Medium",
-                },
-                headerTitleAlign: "center",
-                headerStyle: {
-                  backgroundColor: "white",
-                },
-                headerBackTitle: "Back",
-              }}
-            >
-              <Stack.Screen name="HomeTabs" component={HomeTabs} options={{ headerShown: false }} />
-              <Stack.Screen
-                name="FoodInfoScreen"
-                component={FoodInfoScreen}
-                options={{ title: "Food Information" }}
-              />
-              <Stack.Screen
-                name="SearchScreen"
-                component={SearchScreen}
-                options={{ title: "Search Ingredients" }}
-              />
-              <Stack.Screen name="CalculatorScreen" component={CalculatorScreen} />
-              <Stack.Screen
-                name="CustomRatioScreen"
-                component={CustomRatioScreen}
-                options={{ title: "Custom Ratio" }}
-              />
-              <Stack.Screen name="InfoAndSupportScreen" component={InfoAndSupportScreen} />
-              <Stack.Screen name="RecipeScreen" component={RecipeScreen} />
-              <Stack.Screen name="FAQScreen" component={FAQScreen} options={{ title: "App FAQs" }} />
-              <Stack.Screen
-                name="RawFeedingFAQScreen"
-                component={RawFeedingFAQScreen}
-                options={{ title: "Raw Feeding FAQs" }}
-              />
-            </Stack.Navigator>
-          </NavigationContainer>
+          <RecipeProvider>
+            <NavigationContainer>
+              <Stack.Navigator
+                initialRouteName="HomeTabs"
+                screenOptions={{
+                  headerTitleStyle: {
+                    fontSize: 20,
+                    fontWeight: "600",
+                    color: "black",
+                    fontFamily: "Roboto-Medium",
+                  },
+                  headerTitleAlign: "center",
+                  headerStyle: {
+                    backgroundColor: "white",
+                  },
+                  headerBackTitle: "Back",
+                }}
+              >
+                <Stack.Screen name="HomeTabs" component={HomeTabs} options={{ headerShown: false }} />
+                <Stack.Screen
+                  name="FoodInfoScreen"
+                  component={FoodInfoScreen}
+                  options={{ title: "Food Information" }}
+                />
+                <Stack.Screen name="SearchScreen" component={SearchScreen} options={{ title: "Search Ingredients" }} />
+                <Stack.Screen name="CalculatorScreen" component={CalculatorScreen} />
+                <Stack.Screen
+                  name="CustomRatioScreen"
+                  component={CustomRatioScreen}
+                  options={{ title: "Custom Ratio" }}
+                />
+                <Stack.Screen name="InfoAndSupportScreen" component={InfoAndSupportScreen} />
+                <Stack.Screen name="RecipeScreen" component={RecipeScreen} />
+                <Stack.Screen name="FAQScreen" component={FAQScreen} options={{ title: "App FAQs" }} />
+                <Stack.Screen
+                  name="RawFeedingFAQScreen"
+                  component={RawFeedingFAQScreen}
+                  options={{ title: "Raw Feeding FAQs" }}
+                />
+              </Stack.Navigator>
+            </NavigationContainer>
+          </RecipeProvider>
         </SaveProvider>
       </UnitProvider>
     </SafeAreaProvider>
-  );
-};
+  )
+}
 
-export default App;
+export default App
