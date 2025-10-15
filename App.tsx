@@ -2,7 +2,7 @@ import type React from "react"
 import { NavigationContainer } from "@react-navigation/native"
 import { createStackNavigator } from "@react-navigation/stack"
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
-import { Text, View, StatusBar } from "react-native"
+import { Text, View, StatusBar, Platform } from "react-native"
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context"
 import { FontAwesome6 } from "@expo/vector-icons"
 
@@ -90,11 +90,13 @@ const HomeTabs = () => {
           )
         },
         tabBarShowLabel: false,
-        tabBarStyle: {
-          backgroundColor: "#000080",
-          height: 60 + insets.bottom,
-          paddingBottom: insets.bottom,
-        },
+      tabBarStyle: {
+        backgroundColor: "#000080",
+        height: Platform.OS === "ios" ? 52 + insets.bottom / 2 : 60 + insets.bottom,
+        paddingBottom: Platform.OS === "ios" ? insets.bottom / 2 : insets.bottom,
+        justifyContent: "center",
+        alignItems: "center",
+      },
       })}
     >
       <Tab.Screen

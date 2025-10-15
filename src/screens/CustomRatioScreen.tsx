@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect } from "react"
-import { View, Text, StatusBar, StyleSheet, KeyboardAvoidingView, Platform, Dimensions } from "react-native"
+import { View, Text, StatusBar, StyleSheet, KeyboardAvoidingView, ScrollView, Platform, Dimensions } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { useNavigation, useRoute, type RouteProp, useFocusEffect } from "@react-navigation/native"
 import AsyncStorage from "@react-native-async-storage/async-storage"
@@ -80,6 +80,7 @@ const CustomRatioScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.container}>
           <View style={styles.ratioTitleContainer}>
             <Text style={styles.ratioTitle}>Enter your custom ratio:</Text>
@@ -95,6 +96,7 @@ const CustomRatioScreen: React.FC = () => {
             onUseRatio={onUseRatio}
           />
         </KeyboardAvoidingView>
+      </ScrollView>
     </SafeAreaView>
   )
 }

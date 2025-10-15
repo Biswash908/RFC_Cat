@@ -3,7 +3,7 @@
 import type React from "react"
 import { useEffect } from "react"
 import { View, StyleSheet, StatusBar, Platform, Dimensions } from "react-native"
-import { SafeAreaView } from "react-native-safe-area-context"
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { useNavigation } from "@react-navigation/native"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { useUnit } from "../context/UnitContext"
@@ -27,6 +27,7 @@ const rs = (size: number) => Math.round(size * (isIOS ? Math.min(scale, 1.2) : s
 const vs = (size: number) => Math.round(size * (isIOS ? Math.min(verticalScale, 1.2) : verticalScale))
 
 const FoodInputScreen: React.FC = () => {
+  const insets = useSafeAreaInsets()
   const navigation = useNavigation()
   const { unit: globalUnit } = useUnit()
 
@@ -135,7 +136,7 @@ const FoodInputScreen: React.FC = () => {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
       <View style={styles.container}>
         <TopBar recipeName={recipeName} />
@@ -149,7 +150,7 @@ const FoodInputScreen: React.FC = () => {
           formatWeight={formatWeight}
         />
 
-        <View style={styles.contentContainer}>
+        <View style={[styles.contentContainer, { paddingBottom: (isIOS ? 120 : 100) + insets.bottom }]}>
           <IngredientList
             ingredients={ingredients}
             formatWeight={formatWeight}
@@ -196,7 +197,6 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
-    paddingBottom: vs(120), // Space for the fixed button container
   },
 })
 

@@ -75,35 +75,168 @@ const CalculatorScreen: React.FC = () => {
     navigation.setOptions({ title: "Calculator" })
   }, [navigation])
 
+  // Update current weights when route params change
+  useEffect(() => {
+    if (route.params?.meat !== undefined) setCurrentMeatWeight(route.params.meat)
+    if (route.params?.bone !== undefined) setCurrentBoneWeight(route.params.bone)
+    if (route.params?.organ !== undefined) setCurrentOrganWeight(route.params.organ)
+  }, [route.params?.meat, route.params?.bone, route.params?.organ])
+
+  // Calculate correctors whenever weights or ratios change
+  useEffect(() => {
+    const correctors = calculateCorrectorValues(
+      currentMeatWeight,
+      currentBoneWeight,
+      currentOrganWeight,
+      newMeat,
+      newBone,
+      newOrgan,
+    )
+    setMeatCorrect(correctors.meatCorrect)
+    setBoneCorrect(correctors.boneCorrect)
+    setOrganCorrect(correctors.organCorrect)
+  }, [newMeat, newBone, newOrgan, currentMeatWeight, currentBoneWeight, currentOrganWeight])
+
+  // Recalculate correctors when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      const correctors = calculateCorrectorValues(
+        currentMeatWeight,
+        currentBoneWeight,
+        currentOrganWeight,
+        newMeat,
+        newBone,
+        newOrgan,
+      )
+      setMeatCorrect(correctors.meatCorrect)
+      setBoneCorrect(correctors.boneCorrect)
+      setOrganCorrect(correctors.organCorrect)
+    }, [newMeat, newBone, newOrgan, currentMeatWeight, currentBoneWeight, currentOrganWeight]),
+  )
+
+  // Load temporary or recipe-specific ratios on focus
+  useFocusEffect(
+    React.useCallback(() => {
+      const loadRatios = async () => {
+        try {
+          const tempSelectedRatio = await AsyncStorage.getItem("tempSelectedRatio")
+          const tempMeatRatio = await AsyncStorage.getItem("tempMeatRatio")
+          const tempBoneRatio = await AsyncStorage.getItem("tempBoneRatio")
+          const tempOrganRatio = await AsyncStorage.getItem("tempOrganRatio")
+
+          if (tempSelectedRatio && tempMeatRatio && tempBoneRatio && tempOrganRatio) {
+            await setRatio(Number(tempMeatRatio), Number(tempBoneRatio), Number(tempOrganRatio), tempSelectedRatio)
+            return
+          }
+
+          const selectedRecipeStr = await AsyncStorage.getItem("selectedRecipe")
+          if (selectedRecipeStr) {
+            const selectedRecipe = JSON.parse(selectedRecipeStr)
+            if (selectedRecipe.ratio) {
+              await setRatio(
+                selectedRecipe.ratio.meat,
+                selectedRecipe.ratio.bone,
+                selectedRecipe.ratio.organ,
+                selectedRecipe.ratio.selectedRatio,
+              )
+            }
+          }
+        } catch (error) {
+          console.log("❌ Failed to load ratios:", error)
+        }
+      }
+
+      loadRatios()
+    }, []),
+  )
+
   const navigateToCustomRatio = async () => {
     await AsyncStorage.setItem("userSelectedRatio", "true")
-    ;(navigation as any).navigate("CustomRatioScreen", { customRatio })
+
+    try {
+      const selectedRecipeStr = await AsyncStorage.getItem("selectedRecipe")
+      if (selectedRecipeStr) {
+        const selectedRecipe = JSON.parse(selectedRecipeStr)
+
+        if (selectedRecipe.savedCustomRatio) {
+          ;(navigation as any).navigate("CustomRatioScreen", {
+            customRatio: selectedRecipe.savedCustomRatio,
+          })
+          return
+        }
+
+        if (selectedRecipe.ratio?.selectedRatio === "custom") {
+          ;(navigation as any).navigate("CustomRatioScreen", {
+            customRatio: {
+              meat: selectedRecipe.ratio.meat,
+              bone: selectedRecipe.ratio.bone,
+              organ: selectedRecipe.ratio.organ,
+            },
+          })
+          return
+        }
+      }
+
+      if (selectedRatio === "custom") {
+        ;(navigation as any).navigate("CustomRatioScreen", { customRatio })
+      } else {
+        const customMeatRatio = await AsyncStorage.getItem("customMeatRatio")
+        const customBoneRatio = await AsyncStorage.getItem("customBoneRatio")
+        const customOrganRatio = await AsyncStorage.getItem("customOrganRatio")
+
+        if (customMeatRatio && customBoneRatio && customOrganRatio) {
+          ;(navigation as any).navigate("CustomRatioScreen", {
+            customRatio: {
+              meat: Number(customMeatRatio),
+              bone: Number(customBoneRatio),
+              organ: Number(customOrganRatio),
+            },
+          })
+        } else {
+          ;(navigation as any).navigate("CustomRatioScreen", {
+            customRatio: null,
+          })
+        }
+      }
+    } catch (error) {
+      console.error("Error getting current recipe ratio:", error)
+      ;(navigation as any).navigate("CustomRatioScreen", {
+        customRatio: selectedRatio === "custom" ? customRatio : null,
+      })
+    }
   }
 
   const handleSetRatio = async (meat: number, bone: number, organ: number, ratio: string) => {
     await setRatio(meat, bone, organ, ratio)
     ;(navigation as any).setParams({
-      ratio: { meat, bone, organ, selectedRatio: ratio, isUserDefined: true, isTemporary: true },
+      ratio: {
+        meat,
+        bone,
+        organ,
+        selectedRatio: ratio,
+        isUserDefined: true,
+        isTemporary: true,
+      },
     })
   }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.container}>
-        <View style={styles.topBar} />
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.container}>
+          <View style={styles.topBar} />
 
-        <View style={styles.ratioTitleContainer}>
-          <Text style={styles.ratioTitle}>Set your Meat: Bone: Organ ratio:</Text>
-          <InfoButton title="Ratio Info" message={RATIO_INFO_TEXT} />
-        </View>
+          <View style={styles.ratioTitleContainer}>
+            <Text style={styles.ratioTitle}>Set your Meat: Bone: Organ ratio:</Text>
+            <InfoButton title="Ratio Info" message={RATIO_INFO_TEXT} />
+          </View>
 
-        <RatioSelector selectedRatio={selectedRatio} onSelectRatio={handleSetRatio} />
+          <RatioSelector selectedRatio={selectedRatio} onSelectRatio={handleSetRatio} />
 
-        <CustomRatioButton selectedRatio={selectedRatio} customRatio={customRatio} onPress={navigateToCustomRatio} />
+          <CustomRatioButton selectedRatio={selectedRatio} customRatio={customRatio} onPress={navigateToCustomRatio} />
 
-        <CorrectorGrid meatCorrect={meatCorrect} boneCorrect={boneCorrect} organCorrect={organCorrect} unit={unit} />
-      </KeyboardAvoidingView>
+          <CorrectorGrid meatCorrect={meatCorrect} boneCorrect={boneCorrect} organCorrect={organCorrect} unit={unit} />
+        </KeyboardAvoidingView>
     </SafeAreaView>
   )
 }
@@ -112,6 +245,9 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#FFF",
+  },
+  scrollContainer: {
+    paddingBottom: 20,
   },
   container: {
     flex: 1,
