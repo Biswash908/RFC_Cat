@@ -1,5 +1,3 @@
-"use client"
-
 import { useState, useMemo } from "react"
 import { INGREDIENTS_DATABASE } from "../constants/ingredients-data"
 

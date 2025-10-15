@@ -1,90 +1,59 @@
 import type React from "react"
-import { View, Text, StyleSheet } from "react-native"
-import { formatAmount } from "../../../utils/formatting"
+import { View, Text, StyleSheet, Platform, Dimensions } from "react-native"
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window")
+const isSmallDevice = SCREEN_WIDTH < 375
+const scale = SCREEN_WIDTH / 375
+const rs = (size: number) => Math.round(size * (Platform.OS === "ios" ? Math.min(scale, 1.2) : scale))
 
 interface TotalBarProps {
   totalMeat: number
   totalBone: number
   totalOrgan: number
   totalWeight: number
-  unit: string
+  unit: "g" | "kg" | "lbs"
+  formatWeight: (weight: number, unit: "g" | "kg" | "lbs") => string
 }
 
-export const TotalBar: React.FC<TotalBarProps> = ({ totalMeat, totalBone, totalOrgan, totalWeight, unit }) => {
-  const meatPercent = totalWeight > 0 ? ((totalMeat / totalWeight) * 100).toFixed(1) : "0.0"
-  const bonePercent = totalWeight > 0 ? ((totalBone / totalWeight) * 100).toFixed(1) : "0.0"
-  const organPercent = totalWeight > 0 ? ((totalOrgan / totalWeight) * 100).toFixed(1) : "0.0"
-
+export const TotalBar: React.FC<TotalBarProps> = ({
+  totalMeat,
+  totalBone,
+  totalOrgan,
+  totalWeight,
+  unit,
+  formatWeight,
+}) => {
   return (
     <View style={styles.totalBar}>
-      <Text style={styles.totalTitle}>Totals</Text>
-      <View style={styles.totalRow}>
-        <Text style={styles.totalLabel}>Meat:</Text>
-        <Text style={styles.totalValue}>
-          {formatAmount(totalMeat, unit)} ({meatPercent}%)
-        </Text>
-      </View>
-      <View style={styles.totalRow}>
-        <Text style={styles.totalLabel}>Bone:</Text>
-        <Text style={styles.totalValue}>
-          {formatAmount(totalBone, unit)} ({bonePercent}%)
-        </Text>
-      </View>
-      <View style={styles.totalRow}>
-        <Text style={styles.totalLabel}>Organ:</Text>
-        <Text style={styles.totalValue}>
-          {formatAmount(totalOrgan, unit)} ({organPercent}%)
-        </Text>
-      </View>
-      <View style={[styles.totalRow, styles.totalWeightRow]}>
-        <Text style={styles.totalWeightLabel}>Total Weight:</Text>
-        <Text style={styles.totalWeightValue}>{formatAmount(totalWeight, unit)}</Text>
-      </View>
+      <Text style={styles.totalText}>Total: {formatWeight(totalWeight || 0, unit)}</Text>
+      <Text style={styles.subTotalText}>
+        Meat: {formatWeight(totalMeat || 0, unit)} (
+        {totalWeight > 0 ? ((totalMeat / totalWeight) * 100).toFixed(2) : "0.00"}
+        %) | Bone: {formatWeight(totalBone || 0, unit)} (
+        {totalWeight > 0 ? ((totalBone / totalWeight) * 100).toFixed(2) : "0.00"}
+        %) | Organ: {formatWeight(totalOrgan || 0, unit)} (
+        {totalWeight > 0 ? ((totalOrgan / totalWeight) * 100).toFixed(2) : "0.00"}
+        %)
+      </Text>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
   totalBar: {
-    backgroundColor: "#f5f5f5",
-    padding: 15,
-    borderRadius: 8,
-    marginVertical: 10,
+    padding: rs(isSmallDevice ? 5 : 8),
+    borderBottomWidth: 1,
+    borderBottomColor: "#ded8d7",
+    backgroundColor: "white",
+    marginTop: isSmallDevice ? -12 : -10,
   },
-  totalTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#333",
-    marginBottom: 10,
+  totalText: {
+    fontSize: rs(isSmallDevice ? 16 : 18),
+    fontWeight: "bold",
+    color: "black",
   },
-  totalRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 6,
-  },
-  totalLabel: {
-    fontSize: 15,
-    color: "#666",
-  },
-  totalValue: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#333",
-  },
-  totalWeightRow: {
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: "#ddd",
-  },
-  totalWeightLabel: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#333",
-  },
-  totalWeightValue: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#4CAF50",
+  subTotalText: {
+    fontSize: rs(isSmallDevice ? 12 : 14),
+    color: "black",
   },
 })

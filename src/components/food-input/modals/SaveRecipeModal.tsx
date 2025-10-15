@@ -2,7 +2,14 @@
 
 import type React from "react"
 import { useState } from "react"
-import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native"
+import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Platform, Dimensions } from "react-native"
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window")
+const isSmallDevice = SCREEN_WIDTH < 375
+const scale = SCREEN_WIDTH / 375
+const verticalScale = SCREEN_HEIGHT / 812
+const rs = (size: number) => Math.round(size * (Platform.OS === "ios" ? Math.min(scale, 1.2) : scale))
+const vs = (size: number) => Math.round(size * (Platform.OS === "ios" ? Math.min(verticalScale, 1.2) : verticalScale))
 
 interface SaveRecipeModalProps {
   visible: boolean
@@ -16,12 +23,11 @@ export const SaveRecipeModal: React.FC<SaveRecipeModalProps> = ({ visible, onClo
 
   const handleSave = () => {
     if (!recipeName.trim()) {
-      Alert.alert("Error", "Please enter a recipe name")
+      Alert.alert("Error", "Recipe name can't be empty.")
       return
     }
     onSave(recipeName.trim())
     setRecipeName("")
-    onClose()
   }
 
   const handleClose = () => {
@@ -30,26 +36,17 @@ export const SaveRecipeModal: React.FC<SaveRecipeModalProps> = ({ visible, onClo
   }
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Save Recipe</Text>
-
-          <TextInput
-            style={styles.input}
-            placeholder="Enter recipe name"
-            value={recipeName}
-            onChangeText={setRecipeName}
-            autoFocus
-          />
-
-          <View style={styles.buttonRow}>
-            <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={handleClose}>
-              <Text style={styles.buttonText}>Cancel</Text>
+    <Modal transparent={true} visible={visible} onRequestClose={handleClose}>
+      <View style={styles.modalContainer}>
+        <View style={styles.modalBox}>
+          <Text style={styles.modalTitle}>Add Recipe</Text>
+          <TextInput style={styles.input} placeholder="Recipe Name" value={recipeName} onChangeText={setRecipeName} />
+          <View style={styles.modalButtonsContainer}>
+            <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+              <Text style={styles.saveButtonText}>Save</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity style={[styles.button, styles.saveButton]} onPress={handleSave}>
-              <Text style={styles.buttonText}>Save</Text>
+            <TouchableOpacity style={styles.cancelButton} onPress={handleClose}>
+              <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -59,53 +56,68 @@ export const SaveRecipeModal: React.FC<SaveRecipeModalProps> = ({ visible, onClo
 }
 
 const styles = StyleSheet.create({
-  modalOverlay: {
+  modalContainer: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
-  modalContent: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 20,
+  modalBox: {
     width: "80%",
-    maxWidth: 400,
+    backgroundColor: "white",
+    padding: rs(16),
+    borderRadius: 10,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#333",
-    marginBottom: 15,
+    fontSize: rs(isSmallDevice ? 16 : 18),
+    fontWeight: "bold",
+    marginBottom: vs(12),
     textAlign: "center",
   },
   input: {
+    height: Platform.OS === "ios" ? vs(40) : vs(isSmallDevice ? 50 : 40),
+    borderColor: "gray",
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    marginBottom: 20,
+    width: "100%",
+    paddingHorizontal: rs(10),
+    marginBottom: vs(16),
+    borderRadius: 5,
   },
-  buttonRow: {
+  modalButtonsContainer: {
     flexDirection: "row",
-    gap: 10,
-  },
-  button: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  cancelButton: {
-    backgroundColor: "#999",
+    justifyContent: "space-between",
+    width: "100%",
   },
   saveButton: {
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#000080",
+    flex: 1,
+    paddingVertical: vs(8),
+    borderRadius: 5,
+    alignItems: "center",
+    marginRight: rs(5),
   },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
+  cancelButton: {
+    backgroundColor: "grey",
+    flex: 1,
+    paddingVertical: vs(8),
+    borderRadius: 5,
+    alignItems: "center",
+    marginLeft: rs(5),
+  },
+  saveButtonText: {
+    color: "white",
+    fontSize: rs(isSmallDevice ? 14 : 16),
+    fontWeight: "bold",
+  },
+  cancelButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: rs(isSmallDevice ? 12 : 14),
   },
 })

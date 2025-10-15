@@ -1,4 +1,5 @@
-import { StyleSheet, SafeAreaView, ScrollView, StatusBar } from "react-native"
+import { StyleSheet, ScrollView, StatusBar } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
 import { FAQItem } from "../components/shared/FAQItem"
 import { rawFeedingFaqs } from "../constants/faq-data"
 

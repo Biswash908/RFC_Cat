@@ -1,7 +1,8 @@
 "use client"
 
 import { useLayoutEffect } from "react"
-import { View, StyleSheet, SafeAreaView, StatusBar, Linking } from "react-native"
+import { View, StyleSheet, StatusBar, Linking } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
 import { SupportLinkItem } from "../components/support/SupportLinkItem"
 import { supportLinks } from "../constants/support-links"
 
@@ -21,7 +22,7 @@ const InfoAndSupportScreen = ({ navigation }) => {
   }, [navigation])
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
       <View style={styles.container}>
         {supportLinks.map((link) => (
@@ -44,7 +45,8 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 0,
     justifyContent: "flex-start",
   },
 })

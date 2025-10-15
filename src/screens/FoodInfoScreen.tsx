@@ -1,5 +1,3 @@
-"use client"
-
 import { useState } from "react"
 import { Text, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from "react-native"
 import type { RouteProp } from "@react-navigation/native"

@@ -16,7 +16,7 @@ export const useWeightCalculation = (weight: string, selectedUnit: "g" | "kg" | 
 
   useEffect(() => {
     if (weight && !isNaN(Number.parseFloat(weight))) {
-      const weightInGrams = convertWeight(Number.parseFloat(weight))
+      const weightInGrams = convertWeight(Number.parseFloat(weight), selectedUnit)
       const weights = calculateComponentWeights(weightInGrams, ingredient)
 
       setMeatWeight(weights.meatWeight)

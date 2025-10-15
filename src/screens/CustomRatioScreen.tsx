@@ -1,57 +1,128 @@
-import type React from "react"
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native"
+"use client"
+
+import React, { useEffect } from "react"
+import { View, Text, StatusBar, StyleSheet, KeyboardAvoidingView, Platform, Dimensions } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
+import { useNavigation, useRoute, type RouteProp, useFocusEffect } from "@react-navigation/native"
+import AsyncStorage from "@react-native-async-storage/async-storage"
+import { useSaveContext } from "../context/SaveContext"
 import { useCustomRatio } from "../hooks/useCustomRatio"
 import { RatioInputGrid } from "../components/custom-ratio/RatioInputGrid"
+import { InfoButton } from "../components/calculator/InfoButton"
+import { CUSTOM_RATIO_INFO_TEXT } from "../constants/ratios"
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window")
+const isSmallDevice = SCREEN_WIDTH < 375
+const isIOS = Platform.OS === "ios"
+const scale = SCREEN_WIDTH / 375
+const rs = (size: number) => Math.round(size * (isIOS ? Math.min(scale, 1.2) : scale))
+
+interface Ingredient {
+  id: string
+  name: string
+  type: string
+  amount: number
+  unit: string
+  bonePercent?: number
+}
+
+type RootStackParamList = {
+  FoodInputScreen: undefined
+  FoodInfoScreen: { ingredient: Ingredient; editMode: boolean }
+  SearchScreen: undefined
+  CalculatorScreen: { meat: number; bone: number; organ: number; ratio?: any }
+  CustomRatioScreen: { customRatio?: { meat: number; bone: number; organ: number } | null }
+}
+
+type CustomRatioScreenRouteProp = RouteProp<RootStackParamList, "CustomRatioScreen">
 
 const CustomRatioScreen: React.FC = () => {
-  const { meatRatio, boneRatio, organRatio, setMeatRatio, setBoneRatio, setOrganRatio, handleSaveRatio } =
-    useCustomRatio()
+  const route = useRoute<CustomRatioScreenRouteProp>()
+  const navigation = useNavigation()
+  const { customRatios } = useSaveContext()
+
+  const initialCustomRatio = route.params?.customRatio || null
+
+  const { meatRatio, boneRatio, organRatio, totalRatio, handleRatioChange, handleUseRatio } =
+    useCustomRatio(initialCustomRatio)
+
+  useEffect(() => {
+    navigation.setOptions({ title: "Custom Ratio" })
+  }, [navigation])
+
+  // Load custom ratio from AsyncStorage when screen is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      const loadCustomRatio = async () => {
+        try {
+          const customMeatRatio = await AsyncStorage.getItem("customMeatRatio")
+          const customBoneRatio = await AsyncStorage.getItem("customBoneRatio")
+          const customOrganRatio = await AsyncStorage.getItem("customOrganRatio")
+
+          if (customMeatRatio && customBoneRatio && customOrganRatio) {
+            handleRatioChange("meat", customMeatRatio)
+            handleRatioChange("bone", customBoneRatio)
+            handleRatioChange("organ", customOrganRatio)
+          }
+        } catch (error) {
+          console.log("Failed to load custom ratio:", error)
+        }
+      }
+
+      loadCustomRatio()
+    }, []),
+  )
+
+  const onUseRatio = async () => {
+    await handleUseRatio()
+  }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.titleContainer}>
-        <Text style={styles.title}>Select your Custom ratio:</Text>
-      </View>
+    <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
+      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.container}>
+          <View style={styles.ratioTitleContainer}>
+            <Text style={styles.ratioTitle}>Enter your custom ratio:</Text>
+            <InfoButton title="Custom Ratio Info" message={CUSTOM_RATIO_INFO_TEXT} />
+          </View>
 
-      <RatioInputGrid
-        meatRatio={meatRatio}
-        boneRatio={boneRatio}
-        organRatio={organRatio}
-        onMeatChange={setMeatRatio}
-        onBoneChange={setBoneRatio}
-        onOrganChange={setOrganRatio}
-      />
-
-      <TouchableOpacity style={styles.button} onPress={handleSaveRatio}>
-        <Text style={styles.buttonText}>Use Ratio</Text>
-      </TouchableOpacity>
-    </View>
+          <RatioInputGrid
+            meatRatio={meatRatio}
+            boneRatio={boneRatio}
+            organRatio={organRatio}
+            totalRatio={totalRatio}
+            onRatioChange={handleRatioChange}
+            onUseRatio={onUseRatio}
+          />
+        </KeyboardAvoidingView>
+    </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    padding: 16,
     backgroundColor: "#FFF",
   },
-  titleContainer: {
-    marginBottom: 10,
+  scrollContainer: {
+    paddingBottom: 20,
   },
-  title: {
+  container: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 24, // no overlap with header
+  },
+  ratioTitle: {
+    fontSize: rs(isSmallDevice ? 16 : 18),
     fontWeight: "bold",
-    fontSize: 20,
+    textAlign: "left",
+    flex: 1,
   },
-  button: {
-    backgroundColor: "#000080",
-    paddingVertical: 15,
-    borderRadius: 10,
+  ratioTitleContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-  },
-  buttonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
+    marginBottom: 12, // remove marginTop completely
   },
 })
 

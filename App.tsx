@@ -1,11 +1,10 @@
-"use client"
 import type React from "react"
 import { NavigationContainer } from "@react-navigation/native"
 import { createStackNavigator } from "@react-navigation/stack"
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
 import { Text, View, StatusBar } from "react-native"
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context"
-import FontAwesome6 from "react-native-vector-icons/FontAwesome6"
+import { FontAwesome6 } from "@expo/vector-icons"
 
 import FoodInputScreen from "./src/screens/FoodInputScreen"
 import FoodInfoScreen from "./src/screens/FoodInfoScreen"

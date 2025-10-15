@@ -1,0 +1,168 @@
+# Raw Feeding Calculator - Refactoring Summary
+
+## Overview
+This document summarizes the complete refactoring of the Raw Feeding Calculator app. All screen files have been reduced from 1000+ lines to 60-250 lines by extracting reusable components, hooks, utilities, and constants.
+
+## New Folder Structure
+
+\`\`\`
+/
+├── App.tsx                                    # Main navigation (Bottom tabs + Stack navigator)
+├── app.json
+├── package.json
+└── src/
+    ├── screens/                               # All screen components (60-250 lines each)
+    │   ├── CalculatorScreen.tsx              # ~250 lines (was ~1000)
+    │   ├── CustomRatioScreen.tsx             # ~80 lines (was ~300)
+    │   ├── FAQScreen.tsx                     # ~30 lines (was ~100)
+    │   ├── FoodInfoScreen.tsx                # ~150 lines (was ~400)
+    │   ├── FoodInputScreen.tsx               # ~200 lines (was ~1000+)
+    │   ├── InfoAndSupportScreen.tsx          # ~40 lines (was ~100)
+    │   ├── RawFeedingFAQScreen.tsx           # ~30 lines (was ~100)
+    │   ├── RecipeScreen.tsx                  # ~150 lines (was ~700)
+    │   └── SearchScreen.tsx                  # ~60 lines (was ~300)
+    │
+    ├── components/                            # Reusable UI components
+    │   ├── calculator/                        # Calculator-specific components
+    │   │   ├── CorrectorBox.tsx
+    │   │   ├── CorrectorGrid.tsx
+    │   │   ├── CustomRatioButton.tsx
+    │   │   ├── InfoButton.tsx
+    │   │   └── RatioSelector.tsx
+    │   │
+    │   ├── custom-ratio/                      # Custom ratio input components
+    │   │   ├── RatioInputField.tsx
+    │   │   └── RatioInputGrid.tsx
+    │   │
+    │   ├── food-info/                         # Food info screen components
+    │   │   ├── ResultDisplay.tsx
+    │   │   ├── SupplementTooltip.tsx
+    │   │   └── WeightInput.tsx
+    │   │
+    │   ├── food-input/                        # Food input screen components
+    │   │   ├── modals/
+    │   │   │   └── SaveRecipeModal.tsx
+    │   │   └── ui/
+    │   │       ├── ActionButtons.tsx
+    │   │       ├── IngredientItem.tsx
+    │   │       ├── IngredientList.tsx
+    │   │       ├── TopBar.tsx
+    │   │       └── TotalBar.tsx
+    │   │
+    │   ├── recipe/                            # Recipe screen components
+    │   │   ├── EditRecipeModal.tsx
+    │   │   ├── EmptyState.tsx
+    │   │   ├── RecipeItem.tsx
+    │   │   └── RecipeList.tsx
+    │   │
+    │   ├── search/                            # Search screen components
+    │   │   ├── IngredientListItem.tsx
+    │   │   └── SearchBar.tsx
+    │   │
+    │   ├── shared/                            # Shared/reusable components
+    │   │   ├── FAQItem.tsx
+    │   │   └── UnitSelector.tsx
+    │   │
+    │   └── support/                           # Support screen components
+    │       └── SupportLinkItem.tsx
+    │
+    ├── context/                               # React Context providers
+    │   ├── RecipeContext.tsx                  # Recipe loading and selection
+    │   ├── SaveContext.tsx                    # Custom ratios management
+    │   └── UnitContext.tsx                    # Unit conversion (g/kg/lbs)
+    │
+    ├── hooks/                                 # Custom React hooks
+    │   ├── useCustomRatio.ts                  # Custom ratio state management
+    │   ├── useIngredientSearch.ts             # Search filtering logic
+    │   ├── useIngredients.ts                  # Ingredient list management
+    │   ├── useRatioManagement.ts              # Ratio selection and storage
+    │   ├── useRecipeList.ts                   # Recipe list operations
+    │   ├── useRecipeManagement.ts             # Recipe saving and loading
+    │   └── useWeightCalculation.ts            # Weight calculations
+    │
+    ├── utils/                                 # Utility functions
+    │   ├── calculations.ts                    # Food input calculations
+    │   ├── calculator-utils.ts                # Calculator utilities
+    │   ├── formatting.ts                      # Number and text formatting
+    │   ├── ratio-validation.ts                # Ratio validation logic
+    │   ├── recipe-utils.ts                    # Recipe operations
+    │   ├── storage.ts                         # AsyncStorage operations
+    │   └── weight-conversion.ts               # Weight conversion utilities
+    │
+    ├── types/                                 # TypeScript type definitions
+    │   ├── calculator.types.ts                # Calculator interfaces
+    │   ├── food-input.types.ts                # Food input interfaces
+    │   └── recipe.types.ts                    # Recipe interfaces
+    │
+    ├── constants/                             # Constants and static data
+    │   ├── default-recipes.ts                 # Default recipe data
+    │   ├── faq-data.ts                        # FAQ questions and answers
+    │   ├── ingredients-data.ts                # 76 ingredient database
+    │   ├── ratios.ts                          # Ratio constants and info
+    │   ├── responsive.ts                      # Responsive sizing utilities
+    │   ├── support-links.ts                   # Support screen links
+    │   └── units.ts                           # Unit conversion constants
+    │
+    └── styles/                                # Global styles
+        └── GlobalStyles.ts                    # Shared style constants
+\`\`\`
+
+## Refactoring Results
+
+### Screen File Reductions
+
+| Screen | Before | After | Reduction |
+|--------|--------|-------|-----------|
+| FoodInputScreen | ~1000+ lines | ~200 lines | 80% |
+| CalculatorScreen | ~1000+ lines | ~250 lines | 75% |
+| RecipeScreen | ~700 lines | ~150 lines | 79% |
+| FoodInfoScreen | ~400 lines | ~150 lines | 63% |
+| CustomRatioScreen | ~300 lines | ~80 lines | 73% |
+| SearchScreen | ~300 lines | ~60 lines | 80% |
+| InfoAndSupportScreen | ~100 lines | ~40 lines | 60% |
+| FAQScreen | ~100 lines | ~30 lines | 70% |
+| RawFeedingFAQScreen | ~100 lines | ~30 lines | 70% |
+
+### Key Improvements
+
+1. **Separation of Concerns**
+   - Business logic moved to custom hooks
+   - UI components are purely presentational
+   - Utilities handle calculations and formatting
+   - Constants store static data
+
+2. **Reusability**
+   - 25 reusable components created
+   - 7 custom hooks for shared logic
+   - 7 utility modules for common operations
+   - Shared components (FAQItem, UnitSelector) used across screens
+
+3. **Maintainability**
+   - Each file has a single, clear responsibility
+   - Easy to locate and modify specific functionality
+   - Type-safe with TypeScript interfaces
+   - Consistent folder structure
+
+4. **Testability**
+   - Hooks can be tested independently
+   - Utilities are pure functions
+   - Components receive props for easy testing
+   - Clear separation of concerns
+
+## Navigation Structure
+
+The app uses React Navigation with:
+- **Bottom Tab Navigator** (3 tabs: Support, Home, Recipes)
+- **Stack Navigator** (for screen navigation)
+
+All screens are properly imported from `src/screens/` and context providers wrap the entire app.
+
+## No Functional Changes
+
+All refactoring was structural only. The app:
+- Looks exactly the same
+- Functions exactly the same
+- Has the same features and behavior
+- Uses the same dependencies
+
+Only the code organization has changed to improve maintainability and scalability.

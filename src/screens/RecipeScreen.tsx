@@ -1,5 +1,3 @@
-"use client"
-
 import React, { useState } from "react"
 import { KeyboardAvoidingView, Platform, Alert, StyleSheet } from "react-native"
 import { useFocusEffect, useNavigation } from "@react-navigation/native"

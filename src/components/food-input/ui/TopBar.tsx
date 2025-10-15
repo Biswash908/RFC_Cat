@@ -1,47 +1,36 @@
 import type React from "react"
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native"
+import { View, Text, StyleSheet, Platform, Dimensions } from "react-native"
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window")
+const isSmallDevice = SCREEN_WIDTH < 375
+const scale = SCREEN_WIDTH / 375
+const verticalScale = SCREEN_HEIGHT / 812
+const rs = (size: number) => Math.round(size * (Platform.OS === "ios" ? Math.min(scale, 1.2) : scale))
+const vs = (size: number) => Math.round(size * (Platform.OS === "ios" ? Math.min(verticalScale, 1.2) : verticalScale))
 
 interface TopBarProps {
   recipeName: string
-  onLoadRecipe: () => void
 }
 
-export const TopBar: React.FC<TopBarProps> = ({ recipeName, onLoadRecipe }) => {
+export const TopBar: React.FC<TopBarProps> = ({ recipeName }) => {
   return (
     <View style={styles.topBar}>
-      <Text style={styles.recipeNameText}>{recipeName}</Text>
-      <TouchableOpacity style={styles.loadButton} onPress={onLoadRecipe}>
-        <Text style={styles.loadButtonText}>Load Recipe</Text>
-      </TouchableOpacity>
+      <Text style={styles.topBarText}>{recipeName || "Raw Feeding Calc"}</Text>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
   topBar: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    backgroundColor: "white",
+    paddingVertical: vs(isSmallDevice ? 7 : 15),
     alignItems: "center",
-    padding: 15,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
+    marginTop: Platform.OS === "ios" ? (isSmallDevice ? 5 : -10) : isSmallDevice ? 10 : 12,
+    marginBottom: Platform.OS === "ios" ? (isSmallDevice ? 5 : -5) : isSmallDevice ? 2 : -6,
   },
-  recipeNameText: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#333",
-    flex: 1,
-  },
-  loadButton: {
-    backgroundColor: "#2196F3",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  loadButtonText: {
-    color: "#fff",
-    fontSize: 14,
+  topBarText: {
+    fontSize: rs(isSmallDevice ? 20 : 22),
     fontWeight: "600",
+    color: "black",
   },
 })

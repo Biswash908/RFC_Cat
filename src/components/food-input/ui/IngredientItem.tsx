@@ -1,31 +1,61 @@
 import type React from "react"
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native"
-import type { Ingredient } from "../../../types/food-input.types"
-import { formatAmount } from "../../../utils/formatting"
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Platform } from "react-native"
+import { FontAwesome } from "@expo/vector-icons"
 
-interface IngredientItemProps {
-  item: Ingredient
-  unit: string
-  onEdit: (item: Ingredient) => void
-  onDelete: (id: string) => void
+const { width: SCREEN_WIDTH } = Dimensions.get("window")
+const isSmallDevice = SCREEN_WIDTH < 375
+const scale = SCREEN_WIDTH / 375
+const rs = (size: number) => Math.round(size * (Platform.OS === "ios" ? Math.min(scale, 1.2) : scale))
+const vs = (size: number) => Math.round(size * (Platform.OS === "ios" ? Math.min(scale, 1.2) : scale))
+
+export type Ingredient = {
+  name: string
+  meatWeight: number
+  boneWeight: number
+  organWeight: number
+  totalWeight: number
+  unit: "g" | "kg" | "lbs"
+  isSupplement?: boolean
 }
 
-export const IngredientItem: React.FC<IngredientItemProps> = ({ item, unit, onEdit, onDelete }) => {
+interface IngredientItemProps {
+  ingredient: Ingredient
+  formatWeight: (weight: number, unit: "g" | "kg" | "lbs") => string
+  onEdit: () => void
+  onDelete: () => void
+}
+
+export const IngredientItem: React.FC<IngredientItemProps> = ({ ingredient, formatWeight, onEdit, onDelete }) => {
+  const getDisplayedBoneWeight = (ing: Ingredient) => {
+    return formatWeight(ing.boneWeight, ing.unit)
+  }
+
   return (
     <View style={styles.ingredientItem}>
-      <View style={styles.ingredientInfo}>
-        <Text style={styles.ingredientName}>{item.name}</Text>
-        <Text style={styles.ingredientDetails}>
-          {formatAmount(item.amount, unit)} • {item.type}
+      <View style={styles.ingredientHeader}>
+        <Text style={styles.ingredientText}>
+          {ingredient.name}
+          {(ingredient.name === "Bone Meal" || ingredient.name === "Powdered Eggshell" || ingredient.isSupplement) && (
+            <Text style={styles.supplementLabel}> (Supplement)</Text>
+          )}
+        </Text>
+        <Text style={styles.totalWeightText}>
+          Total: {formatWeight(isNaN(ingredient.totalWeight) ? 0 : ingredient.totalWeight, ingredient.unit)}
         </Text>
       </View>
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.editButton} onPress={() => onEdit(item)}>
-          <Text style={styles.buttonText}>Edit</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.deleteButton} onPress={() => onDelete(item.id)}>
-          <Text style={styles.buttonText}>Delete</Text>
-        </TouchableOpacity>
+      <View style={styles.detailsContainer}>
+        <Text style={styles.detailsText}>
+          M: {formatWeight(ingredient.meatWeight, ingredient.unit)} | B: {getDisplayedBoneWeight(ingredient)} | O:{" "}
+          {formatWeight(ingredient.organWeight, ingredient.unit)}
+        </Text>
+        <View style={styles.iconsContainer}>
+          <TouchableOpacity style={styles.editButton} onPress={onEdit}>
+            <FontAwesome name="edit" size={rs(24)} color="black" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.deleteButton} onPress={onDelete}>
+            <FontAwesome name="trash" size={rs(24)} color="black" />
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   )
@@ -33,46 +63,50 @@ export const IngredientItem: React.FC<IngredientItemProps> = ({ item, unit, onEd
 
 const styles = StyleSheet.create({
   ingredientItem: {
+    padding: rs(6),
+    backgroundColor: "#f5f5f5",
+    borderRadius: 5,
+    marginBottom: vs(10),
+  },
+  ingredientHeader: {
+    flexDirection: "row",
+    justifyContent: "flex-start",
+    alignItems: "center",
+    marginBottom: vs(2),
+  },
+  ingredientText: {
+    fontSize: rs(isSmallDevice ? 16 : 18),
+    fontWeight: "bold",
+    color: "black",
+    marginRight: rs(10),
+  },
+  supplementLabel: {
+    fontSize: rs(isSmallDevice ? 12 : 14),
+    fontStyle: "italic",
+    color: "#000080",
+  },
+  totalWeightText: {
+    fontSize: rs(isSmallDevice ? 14 : 16),
+    color: "#404040",
+  },
+  detailsContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 15,
-    backgroundColor: "#f9f9f9",
-    borderRadius: 8,
-    marginBottom: 10,
   },
-  ingredientInfo: {
+  detailsText: {
+    fontSize: rs(isSmallDevice ? 14 : 16),
+    color: "#404040",
     flex: 1,
   },
-  ingredientName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 4,
-  },
-  ingredientDetails: {
-    fontSize: 14,
-    color: "#666",
-  },
-  buttonContainer: {
+  iconsContainer: {
     flexDirection: "row",
-    gap: 8,
+    alignItems: "center",
   },
   editButton: {
-    backgroundColor: "#4CAF50",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 4,
+    marginRight: rs(8),
   },
   deleteButton: {
-    backgroundColor: "#f44336",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 4,
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
+    marginLeft: rs(4),
   },
 })

@@ -1,5 +1,3 @@
-"use client"
-
 import { useState, useCallback } from "react"
 import { Alert } from "react-native"
 import type { Ingredient, Totals } from "../types/food-input.types"

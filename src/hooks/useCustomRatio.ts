@@ -2,29 +2,28 @@
 
 import { useState, useEffect } from "react"
 import { Alert } from "react-native"
-import { useRoute, useNavigation } from "@react-navigation/native"
+import { useNavigation } from "@react-navigation/native"
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import { useSaveContext } from "../context/SaveContext"
 import { validateRatioTotal } from "../utils/ratio-validation"
 
-export const useCustomRatio = () => {
+export const useCustomRatio = (initialCustomRatio?: { meat: number; bone: number; organ: number } | null) => {
   const navigation = useNavigation()
-  const route = useRoute()
-  const { saveCustomRatios } = useSaveContext()
 
-  const [meatRatio, setMeatRatio] = useState<number>(0)
-  const [boneRatio, setBoneRatio] = useState<number>(0)
-  const [organRatio, setOrganRatio] = useState<number>(0)
+  const [meatRatio, setMeatRatio] = useState<string>("")
+  const [boneRatio, setBoneRatio] = useState<string>("")
+  const [organRatio, setOrganRatio] = useState<string>("")
+
+  const totalRatio = (Number(meatRatio) || 0) + (Number(boneRatio) || 0) + (Number(organRatio) || 0)
 
   useEffect(() => {
     const loadSavedRatios = async () => {
       try {
-        // First check if we have custom ratio from route params
-        if (route.params?.customRatio) {
-          console.log("✅ Loading custom ratio from params:", route.params.customRatio)
-          setMeatRatio(route.params.customRatio.meat || 0)
-          setBoneRatio(route.params.customRatio.bone || 0)
-          setOrganRatio(route.params.customRatio.organ || 0)
+        // First check if we have custom ratio from initial params
+        if (initialCustomRatio) {
+          console.log("✅ Loading custom ratio from params:", initialCustomRatio)
+          setMeatRatio(initialCustomRatio.meat.toString())
+          setBoneRatio(initialCustomRatio.bone.toString())
+          setOrganRatio(initialCustomRatio.organ.toString())
           return
         }
 
@@ -41,9 +40,9 @@ export const useCustomRatio = () => {
 
         // Set saved ratios if they exist
         if (customMeatRatio && customBoneRatio && customOrganRatio) {
-          setMeatRatio(Number.parseFloat(customMeatRatio))
-          setBoneRatio(Number.parseFloat(customBoneRatio))
-          setOrganRatio(Number.parseFloat(customOrganRatio))
+          setMeatRatio(customMeatRatio)
+          setBoneRatio(customBoneRatio)
+          setOrganRatio(customOrganRatio)
         }
       } catch (error) {
         console.log("Failed to load saved ratios:", error)
@@ -51,13 +50,31 @@ export const useCustomRatio = () => {
     }
 
     loadSavedRatios()
-  }, [route.params?.customRatio])
+  }, [initialCustomRatio])
 
-  const handleSaveRatio = async () => {
+  const handleRatioChange = (type: "meat" | "bone" | "organ", value: string) => {
+    switch (type) {
+      case "meat":
+        setMeatRatio(value)
+        break
+      case "bone":
+        setBoneRatio(value)
+        break
+      case "organ":
+        setOrganRatio(value)
+        break
+    }
+  }
+
+  const handleUseRatio = async () => {
+    const meat = Number(meatRatio) || 0
+    const bone = Number(boneRatio) || 0
+    const organ = Number(organRatio) || 0
+
     // Validate ratios
-    const validation = validateRatioTotal(meatRatio, boneRatio, organRatio)
+    const validation = validateRatioTotal(meat, bone, organ)
     if (!validation.isValid) {
-      Alert.alert("Error", validation.error)
+      Alert.alert("Error", validation.error || "Invalid ratio values")
       return
     }
 
@@ -72,35 +89,28 @@ export const useCustomRatio = () => {
       // Save to global AsyncStorage for current session and temporary storage
       await AsyncStorage.multiSet([
         // Regular ratio values (used for UI display)
-        ["meatRatio", meatRatio.toString()],
-        ["boneRatio", boneRatio.toString()],
-        ["organRatio", organRatio.toString()],
+        ["meatRatio", meat.toString()],
+        ["boneRatio", bone.toString()],
+        ["organRatio", organ.toString()],
         ["selectedRatio", "custom"],
 
         // Custom ratio values (for future reference)
-        ["customMeatRatio", meatRatio.toString()],
-        ["customBoneRatio", boneRatio.toString()],
-        ["customOrganRatio", organRatio.toString()],
+        ["customMeatRatio", meat.toString()],
+        ["customBoneRatio", bone.toString()],
+        ["customOrganRatio", organ.toString()],
 
         // Temporary ratio values (separate from permanent recipe data)
-        ["tempMeatRatio", meatRatio.toString()],
-        ["tempBoneRatio", boneRatio.toString()],
-        ["tempOrganRatio", organRatio.toString()],
+        ["tempMeatRatio", meat.toString()],
+        ["tempBoneRatio", bone.toString()],
+        ["tempOrganRatio", organ.toString()],
         ["tempSelectedRatio", "custom"],
       ])
 
       console.log("🚀 Setting custom ratio (temporary):", {
-        meat: meatRatio,
-        bone: boneRatio,
-        organ: organRatio,
+        meat,
+        bone,
+        organ,
         recipeId,
-      })
-
-      // Save to context
-      saveCustomRatios({
-        meat: meatRatio,
-        bone: boneRatio,
-        organ: organRatio,
       })
 
       // If we have a recipe ID and a selected recipe, update the temporary ratio in memory
@@ -109,9 +119,9 @@ export const useCustomRatio = () => {
 
         // Only update the temporary ratio in memory, not in storage
         selectedRecipe.tempRatio = {
-          meat: meatRatio,
-          bone: boneRatio,
-          organ: organRatio,
+          meat,
+          bone,
+          organ,
           selectedRatio: "custom",
           isUserDefined: true,
           isTemporary: true,
@@ -120,13 +130,12 @@ export const useCustomRatio = () => {
         // Save the updated selectedRecipe with the temporary ratio
         await AsyncStorage.setItem("selectedRecipe", JSON.stringify(selectedRecipe))
       }
-
       // Navigate back with the custom ratio
-      navigation.navigate("CalculatorScreen", {
+      ;(navigation as any).navigate("CalculatorScreen", {
         ratio: {
-          meat: meatRatio,
-          bone: boneRatio,
-          organ: organRatio,
+          meat,
+          bone,
+          organ,
           selectedRatio: "custom",
           isUserDefined: true,
           isTemporary: true,
@@ -142,9 +151,8 @@ export const useCustomRatio = () => {
     meatRatio,
     boneRatio,
     organRatio,
-    setMeatRatio,
-    setBoneRatio,
-    setOrganRatio,
-    handleSaveRatio,
+    totalRatio,
+    handleRatioChange,
+    handleUseRatio,
   }
 }
