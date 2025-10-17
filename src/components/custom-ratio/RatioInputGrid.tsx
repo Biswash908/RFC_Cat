@@ -1,5 +1,5 @@
 import type React from "react"
-import { View, StyleSheet, TouchableOpacity, Text, Platform, Dimensions } from "react-native"
+import { View, StyleSheet, TouchableOpacity, Text, Platform, Dimensions, Alert } from "react-native"
 import { RatioInputField } from "./RatioInputField"
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window")
@@ -26,6 +26,17 @@ export const RatioInputGrid: React.FC<RatioInputGridProps> = ({
   onRatioChange,
   onUseRatio,
 }) => {
+  const allRatiosZero = meatRatio === 0 && boneRatio === 0 && organRatio === 0
+  const isValidRatio = totalRatio === 100 && !allRatiosZero
+
+  const handleSetRatio = () => {
+    if (totalRatio !== 100) {
+      Alert.alert("Invalid Ratio", "The sum of the ratios must equal 100%", [{ text: "OK" }])
+      return
+    }
+    onUseRatio()
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.inputRow}>
@@ -48,13 +59,11 @@ export const RatioInputGrid: React.FC<RatioInputGridProps> = ({
         />
       </View>
 
-      <View style={styles.totalContainer}>
-      </View>
+      <View style={styles.totalContainer}></View>
 
       <TouchableOpacity
-        style={[styles.setRatioButton, totalRatio !== 100 && styles.setRatioButtonDisabled]}
-        onPress={onUseRatio}
-        disabled={totalRatio !== 100}
+        style={[styles.setRatioButton, !isValidRatio && styles.setRatioButtonDisabled]}
+        onPress={handleSetRatio}
       >
         <Text style={styles.setRatioButtonText}>Set Ratio</Text>
       </TouchableOpacity>
@@ -74,11 +83,6 @@ const styles = StyleSheet.create({
   totalContainer: {
     alignItems: "center",
     marginVertical: 16,
-  },
-  totalText: {
-    fontSize: rs(isSmallDevice ? 16 : 18),
-    fontWeight: "bold",
-    color: "#000",
   },
   setRatioButton: {
     backgroundColor: "#000080",

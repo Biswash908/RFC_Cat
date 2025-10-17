@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import { v4 as uuidv4 } from "uuid"
+import { generateId } from "../utils/idGenerator"
 import type { Recipe } from "../types/recipe.types"
 import { DEFAULT_RECIPES } from "../constants/default-recipes"
 import { generateUniqueRecipeName } from "../utils/recipe-utils"
@@ -14,6 +14,7 @@ export const useRecipeList = (routeParams?: any) => {
   const loadRecipes = async () => {
     try {
       const storedRecipes = await AsyncStorage.getItem("recipes")
+
       let recipesToSet: Recipe[] = []
 
       if (storedRecipes) {
@@ -53,7 +54,7 @@ export const useRecipeList = (routeParams?: any) => {
         const uniqueRecipeName = generateUniqueRecipeName(newRecipeName, recipes)
 
         const newRecipe: Recipe = {
-          id: uuidv4(),
+          id: generateId(),
           name: uniqueRecipeName,
           ingredients: ingredients,
           ratio: "80:10:10", // Default ratio

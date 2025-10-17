@@ -168,10 +168,10 @@ const FoodInputScreen: React.FC = () => {
           visible={isModalVisible}
           onClose={() => setIsModalVisible(false)}
           onSave={(name) => {
-            setRecipeName(name)
-            createNewRecipe(newMeat, newBone, newOrgan, selectedRatio)
+            createNewRecipe(newMeat, newBone, newOrgan, selectedRatio, name)
           }}
           currentName={recipeName}
+          isUpdate={!!loadedRecipeIdRef.current}
         />
 
         <ActionButtons

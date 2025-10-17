@@ -5,7 +5,7 @@ import type React from "react"
 import { useCallback } from "react"
 import { Alert } from "react-native"
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import { v4 as uuidv4 } from "uuid"
+import { generateId } from "../utils/idGenerator"
 import type { Ingredient } from "../components/food-input/ui/IngredientItem"
 
 export const useRecipeSaving = (
@@ -23,7 +23,7 @@ export const useRecipeSaving = (
     let newName = name
     let counter = 1
     while (existingRecipes.some((r: any) => r.name.toLowerCase() === newName.toLowerCase())) {
-      newName = `${name}(${counter})`
+      newName = `${name} (${counter})`
       counter++
     }
     return newName
@@ -113,35 +113,58 @@ export const useRecipeSaving = (
   )
 
   const createNewRecipe = useCallback(
-    async (newMeat: number, newBone: number, newOrgan: number, selectedRatio: string) => {
+    async (newMeat: number, newBone: number, newOrgan: number, selectedRatio: string, nameOverride?: string) => {
       try {
         setIsSaving(true)
         const storedRecipes = await AsyncStorage.getItem("recipes")
         const parsedRecipes = storedRecipes ? JSON.parse(storedRecipes) : []
 
-        const uniqueRecipeName = generateUniqueRecipeName(recipeName.trim(), parsedRecipes)
-        setRecipeName(uniqueRecipeName)
+        const nameToUse = nameOverride || recipeName.trim()
+
+        const finalRecipeName = loadedRecipeIdRef.current
+          ? nameToUse
+          : generateUniqueRecipeName(nameToUse, parsedRecipes)
+
+        setRecipeName(finalRecipeName)
 
         const ratioObject = await getRatioObject(newMeat, newBone, newOrgan, selectedRatio)
 
-        const newRecipe = {
-          id: uuidv4(),
-          name: uniqueRecipeName,
-          ingredients,
-          ratio: ratioObject,
+        if (loadedRecipeIdRef.current) {
+          const updatedRecipes = parsedRecipes.map((recipe: any) => {
+            if (recipe.id === loadedRecipeIdRef.current) {
+              return {
+                ...recipe,
+                name: finalRecipeName,
+                ingredients,
+                ratio: ratioObject,
+                ...(ratioObject.selectedRatio === "custom" && {
+                  savedCustomRatio: {
+                    meat: ratioObject.meat,
+                    bone: ratioObject.bone,
+                    organ: ratioObject.organ,
+                  },
+                }),
+              }
+            }
+            return recipe
+          })
+          await AsyncStorage.setItem("recipes", JSON.stringify(updatedRecipes))
+          Alert.alert("Success", `Recipe "${finalRecipeName}" updated successfully!`)
+        } else {
+          const newRecipe = {
+            id: generateId(),
+            name: finalRecipeName,
+            ingredients,
+            ratio: ratioObject,
+          }
+
+          const updatedRecipes = [...parsedRecipes, newRecipe]
+          await AsyncStorage.setItem("recipes", JSON.stringify(updatedRecipes))
+          loadedRecipeIdRef.current = newRecipe.id
+
+          Alert.alert("Success", `Recipe saved successfully as "${finalRecipeName}"!`)
         }
 
-        const updatedRecipes = [...parsedRecipes, newRecipe]
-        await AsyncStorage.setItem("recipes", JSON.stringify(updatedRecipes))
-
-        await AsyncStorage.multiSet([
-          ["meatRatio", ratioObject.meat.toString()],
-          ["boneRatio", ratioObject.bone.toString()],
-          ["organRatio", ratioObject.organ.toString()],
-          ["selectedRatio", ratioObject.selectedRatio],
-        ])
-
-        Alert.alert("Success", `Recipe saved successfully as "${uniqueRecipeName}"!`)
         setIsModalVisible(false)
         setHasUnsavedChanges(false)
         await AsyncStorage.setItem("hasUnsavedChanges", "false")
@@ -165,6 +188,7 @@ export const useRecipeSaving = (
       originalRatioRef,
       generateUniqueRecipeName,
       getRatioObject,
+      loadedRecipeIdRef,
     ],
   )
 
@@ -184,7 +208,10 @@ export const useRecipeSaving = (
         Alert.alert("Save Recipe", `Do you want to save changes to "${recipeName}"?`, [
           {
             text: "New Recipe",
-            onPress: () => setIsModalVisible(true),
+            onPress: () => {
+              loadedRecipeIdRef.current = null
+              setIsModalVisible(true)
+            },
           },
           {
             text: "Update",

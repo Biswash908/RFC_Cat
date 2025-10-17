@@ -16,9 +16,16 @@ interface SaveRecipeModalProps {
   onClose: () => void
   onSave: (name: string) => void
   currentName?: string
+  isUpdate?: boolean
 }
 
-export const SaveRecipeModal: React.FC<SaveRecipeModalProps> = ({ visible, onClose, onSave, currentName = "" }) => {
+export const SaveRecipeModal: React.FC<SaveRecipeModalProps> = ({
+  visible,
+  onClose,
+  onSave,
+  currentName = "",
+  isUpdate = false,
+}) => {
   const [recipeName, setRecipeName] = useState(currentName)
 
   const handleSave = () => {
@@ -39,7 +46,7 @@ export const SaveRecipeModal: React.FC<SaveRecipeModalProps> = ({ visible, onClo
     <Modal transparent={true} visible={visible} onRequestClose={handleClose}>
       <View style={styles.modalContainer}>
         <View style={styles.modalBox}>
-          <Text style={styles.modalTitle}>Add Recipe</Text>
+          <Text style={styles.modalTitle}>{isUpdate ? "Update Recipe" : "Add Recipe"}</Text>
           <TextInput style={styles.input} placeholder="Recipe Name" value={recipeName} onChangeText={setRecipeName} />
           <View style={styles.modalButtonsContainer}>
             <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
