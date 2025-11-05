@@ -2,7 +2,7 @@ import type React from "react"
 import { NavigationContainer } from "@react-navigation/native"
 import { createStackNavigator } from "@react-navigation/stack"
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
-import { Text, View, StatusBar, Platform } from "react-native"
+import { Text, View, StatusBar } from "react-native"
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context"
 import { FontAwesome6 } from "@expo/vector-icons"
 
@@ -15,6 +15,7 @@ import RecipeScreen from "./src/screens/RecipeScreen"
 import CustomRatioScreen from "./src/screens/CustomRatioScreen"
 import FAQScreen from "./src/screens/FAQScreen"
 import RawFeedingFAQScreen from "./src/screens/RawFeedingFAQScreen"
+import FoodCalculatorScreen from "./src/screens/FoodCalculatorScreen"
 
 import { UnitProvider } from "./src/context/UnitContext"
 import { SaveProvider } from "./src/context/SaveContext"
@@ -45,6 +46,7 @@ export type RootStackParamList = {
   RawFeedingFAQScreen: undefined
   InfoAndSupportScreen: undefined
   RecipeScreen: undefined
+  FoodCalculatorScreen: undefined
 }
 
 const Stack = createStackNavigator<RootStackParamList>()
@@ -64,13 +66,16 @@ const HomeTabs = () => {
 
           if (route.name === "Home") {
             iconName = "house"
-            label = "Home"
-          } else if (route.name === "InfoAndSupport") {
-            iconName = "gear"
-            label = "Support"
+            label = "Feeding Calc"
           } else if (route.name === "Recipe") {
             iconName = "book"
             label = "Recipes"
+          } else if (route.name === "FoodCalculator") {
+            iconName = "calculator"
+            label = "Daily Portions"
+          } else if (route.name === "InfoAndSupport") {
+            iconName = "gear"
+            label = "Support"
           }
 
           return (
@@ -90,20 +95,19 @@ const HomeTabs = () => {
           )
         },
         tabBarShowLabel: false,
-      tabBarStyle: {
-        backgroundColor: "#000080",
-        height: Platform.OS === "ios" ? 52 + insets.bottom / 2 : 60 + insets.bottom,
-        paddingBottom: Platform.OS === "ios" ? insets.bottom / 2 : insets.bottom,
-        justifyContent: "center",
-        alignItems: "center",
-      },
+        tabBarStyle: {
+          backgroundColor: "#000080",
+          height: 60 + insets.bottom,
+          paddingBottom: insets.bottom,
+        },
       })}
     >
+      <Tab.Screen name="Home" component={FoodInputScreen} options={{ headerShown: false }} />
       <Tab.Screen
-        name="InfoAndSupport"
-        component={InfoAndSupportScreen}
+        name="Recipe"
+        component={RecipeScreen}
         options={{
-          title: "Support",
+          title: "Recipes",
           headerTitleAlign: "center",
           headerStyle: {
             backgroundColor: "white",
@@ -116,12 +120,28 @@ const HomeTabs = () => {
           },
         }}
       />
-      <Tab.Screen name="Home" component={FoodInputScreen} options={{ headerShown: false }} />
       <Tab.Screen
-        name="Recipe"
-        component={RecipeScreen}
+        name="FoodCalculator"
+        component={FoodCalculatorScreen}
         options={{
-          title: "Recipes",
+          title: "Daily Portions",
+          headerTitleAlign: "center",
+          headerStyle: {
+            backgroundColor: "white",
+          },
+          headerTitleStyle: {
+            fontSize: 20,
+            fontWeight: "600",
+            color: "black",
+            fontFamily: "Roboto-Medium",
+          },
+        }}
+      />
+      <Tab.Screen
+        name="InfoAndSupport"
+        component={InfoAndSupportScreen}
+        options={{
+          title: "Support",
           headerTitleAlign: "center",
           headerStyle: {
             backgroundColor: "white",
@@ -182,6 +202,11 @@ const App: React.FC = () => {
                   name="RawFeedingFAQScreen"
                   component={RawFeedingFAQScreen}
                   options={{ title: "Raw Feeding FAQs" }}
+                />
+                <Stack.Screen
+                  name="FoodCalculatorScreen"
+                  component={FoodCalculatorScreen}
+                  options={{ title: "Daily Portions" }}
                 />
               </Stack.Navigator>
             </NavigationContainer>
