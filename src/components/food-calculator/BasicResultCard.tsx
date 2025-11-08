@@ -7,6 +7,9 @@ interface BasicResultCardProps {
 }
 
 export const BasicResultCard: React.FC<BasicResultCardProps> = ({ result }) => {
+  const minPerMealThree = Math.round((result.minDaily / 3) * 10) / 10
+  const maxPerMealThree = Math.round((result.maxDaily / 3) * 10) / 10
+
   return (
     <View style={styles.card}>
       <Text style={styles.title}>Recommended Daily Feed Range</Text>
@@ -22,11 +25,20 @@ export const BasicResultCard: React.FC<BasicResultCardProps> = ({ result }) => {
 
       <View style={styles.divider} />
 
-      <View style={styles.mealRow}>
-        <Text style={styles.mealLabel}>Per Meal (2 meals/day):</Text>
-        <Text style={styles.mealValue}>
-          {result.minPerMeal}–{result.maxPerMeal} g
-        </Text>
+      <View style={styles.mealsContainer}>
+        <View style={styles.mealRow}>
+          <Text style={styles.mealLabel}>Per meal: 2 meals/day</Text>
+          <Text style={styles.mealValue}>
+            {result.minPerMeal}–{result.maxPerMeal} g
+          </Text>
+        </View>
+
+        <View style={styles.mealRow}>
+          <Text style={styles.mealLabel}>Per meal: 3 meals/day</Text>
+          <Text style={styles.mealValue}>
+            {minPerMealThree}–{maxPerMealThree} g
+          </Text>
+        </View>
       </View>
 
       <View style={styles.divider} />
@@ -34,8 +46,9 @@ export const BasicResultCard: React.FC<BasicResultCardProps> = ({ result }) => {
       <View style={styles.noteContainer}>
         <Text style={styles.noteTitle}>Important Note:</Text>
         <Text style={styles.noteText}>
-          This is an estimate and differs for different breeds, individual conditions, and the type of food being fed.
-          Use the Advanced Calculator for more accurate details based on your cat's specific characteristics.
+          This is an estimate meant for maintaining your cat’s current weight. Every cat is different; observe your cat’s
+          body condition, activity level, and eating habits to decide if any adjustment is needed. You can slightly increase
+          the amount if your cat needs to gain weight or reduce it a little if weight loss is needed.
         </Text>
       </View>
     </View>
@@ -67,7 +80,7 @@ const styles = StyleSheet.create({
   mainValue: {
     fontSize: 32,
     fontWeight: "bold",
-    color: "#f7a600",
+    color: "#d45500ff",
   },
   subText: {
     fontSize: 14,
@@ -79,11 +92,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#eee",
     marginVertical: 12,
   },
+  mealsContainer: {
+    gap: 12,
+  },
   mealRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
   },
   mealLabel: {
     fontSize: 14,

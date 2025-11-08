@@ -2,7 +2,7 @@ import type React from "react"
 import { NavigationContainer } from "@react-navigation/native"
 import { createStackNavigator } from "@react-navigation/stack"
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
-import { Text, View, StatusBar } from "react-native"
+import { Text, View, StatusBar, Platform } from "react-native"
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context"
 import { FontAwesome6 } from "@expo/vector-icons"
 
@@ -20,6 +20,7 @@ import FoodCalculatorScreen from "./src/screens/FoodCalculatorScreen"
 import { UnitProvider } from "./src/context/UnitContext"
 import { SaveProvider } from "./src/context/SaveContext"
 import { RecipeProvider } from "./src/context/RecipeContext"
+import { PetFoodBowlIcon } from "./src/components/icons/PetFoodBowlIcon"
 
 // Define the ingredient type
 interface Ingredient {
@@ -61,44 +62,89 @@ const HomeTabs = () => {
       initialRouteName="Home"
       screenOptions={({ route }) => ({
         tabBarIcon: () => {
-          let iconName: string
           let label: string
 
           if (route.name === "Home") {
-            iconName = "house"
             label = "Feeding Calc"
+            return (
+              <View style={{ alignItems: "center", justifyContent: "center" }}>
+                <FontAwesome6 name="calculator" size={22} color={"white"} style={{ textAlign: "center" }} />
+                <Text
+                  style={{
+                    color: "white",
+                    fontSize: 10,
+                    marginTop: 2,
+                    fontFamily: "Roboto-Regular",
+                  }}
+                >
+                  {label}
+                </Text>
+              </View>
+            )
           } else if (route.name === "Recipe") {
-            iconName = "book"
             label = "Recipes"
+            return (
+              <View style={{ alignItems: "center", justifyContent: "center" }}>
+                <FontAwesome6 name="book" size={22} color={"white"} style={{ textAlign: "center" }} />
+                <Text
+                  style={{
+                    color: "white",
+                    fontSize: 10,
+                    marginTop: 2,
+                    fontFamily: "Roboto-Regular",
+                  }}
+                >
+                  {label}
+                </Text>
+              </View>
+            )
           } else if (route.name === "FoodCalculator") {
-            iconName = "calculator"
             label = "Daily Portions"
-          } else if (route.name === "InfoAndSupport") {
-            iconName = "gear"
-            label = "Support"
-          }
+            return (
+              <View style={{ alignItems: "center", justifyContent: "center", height: 40 }}>
+  <View style={{ position: "absolute", top: -7 }}>
+    <PetFoodBowlIcon size={40} color="white" />
+  </View>
+  <Text
+    style={{
+      color: "white",
+      fontSize: 10,
+      position: "absolute",
+      bottom: 0,
+      fontFamily: "Roboto-Regular",
+    }}
+  >
+    {label}
+  </Text>
+</View>
 
-          return (
-            <View style={{ alignItems: "center", justifyContent: "center" }}>
-              <FontAwesome6 name={iconName} size={22} color={"white"} style={{ textAlign: "center" }} />
-              <Text
-                style={{
-                  color: "white",
-                  fontSize: 10,
-                  marginTop: 2,
-                  fontFamily: "Roboto-Regular",
-                }}
-              >
-                {label}
-              </Text>
-            </View>
-          )
+
+            )
+          } else if (route.name === "InfoAndSupport") {
+            label = "Support"
+            return (
+              <View style={{ alignItems: "center", justifyContent: "center" }}>
+                <FontAwesome6 name="gear" size={22} color={"white"} style={{ textAlign: "center" }} />
+                <Text
+                  style={{
+                    color: "white",
+                    fontSize: 10,
+                    marginTop: 2,
+                    fontFamily: "Roboto-Regular",
+                  }}
+                >
+                  {label}
+                </Text>
+              </View>
+            )
+          }
         },
         tabBarShowLabel: false,
         tabBarStyle: {
           backgroundColor: "#000080",
-          height: 60 + insets.bottom,
-          paddingBottom: insets.bottom,
+          height: Platform.OS === "ios" ? 75 : 60,
+          paddingBottom: Platform.OS === "ios" ? insets.bottom / 2 : 8,
+          paddingTop: 6,
         },
       })}
     >
