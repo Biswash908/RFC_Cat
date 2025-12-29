@@ -29,6 +29,16 @@ export interface BasicFeedingResult {
   maxPercent: number // %
 }
 
+export interface AdvancedFeedingResult {
+  dailyFood: number // grams
+  feedingPercent: number // % (e.g., 2.5)
+  meat: number // grams (80%)
+  bone: number // grams (10%)
+  liver: number // grams (5%)
+  organ: number // grams (5%)
+  note?: string
+}
+
 export const calculateBasicFeeding = (weight: number, ageGroup: "kitten" | "adult" | "senior"): BasicFeedingResult => {
   let minPercent = 2.5
   let maxPercent = 3.5
@@ -114,5 +124,88 @@ export const calculateFeeding = (params: FeedingCalculationParams): FeedingResul
     bone,
     organ,
     note,
+  }
+}
+
+// Special handling for free-feeding conditions
+export const calculateAdvancedFeeding = (
+  weight: number, // kg
+  lifeStage: "kitten" | "adult" | "senior",
+  reproductiveStatus: "intact" | "neutered" | "pregnant" | "nursing",
+  activityLevel: "low" | "normal" | "active" | "very_active",
+  weightGoal: "maintain" | "gain" | "lose",
+): AdvancedFeedingResult => {
+  // Special handling for free-feeding conditions
+  if (lifeStage === "kitten" || reproductiveStatus === "pregnant" || reproductiveStatus === "nursing") {
+    const minDaily = Math.round(weight * 0.06 * 1000)
+    const maxDaily = Math.round(weight * 0.1 * 1000)
+    const avgDaily = Math.round((minDaily + maxDaily) / 2)
+
+    return {
+      dailyFood: avgDaily,
+      feedingPercent: (avgDaily / (weight * 1000)) * 100,
+      meat: Math.round(avgDaily * 0.8),
+      bone: Math.round(avgDaily * 0.1),
+      liver: Math.round(avgDaily * 0.05),
+      organ: Math.round(avgDaily * 0.05),
+      note: `Free-feeding recommended. Range: ${minDaily}–${maxDaily} g/day`,
+    }
+  }
+
+  // Base feeding percentage by life stage
+  let basePercent = lifeStage === "senior" ? 0.022 : 0.025
+
+  // Reproductive status adjustment
+  if (reproductiveStatus === "neutered") {
+    basePercent -= 0.0025
+  }
+
+  // Activity level adjustment
+  let activityAdjustment = 0
+  switch (activityLevel) {
+    case "low":
+      activityAdjustment = -0.005
+      break
+    case "normal":
+      activityAdjustment = 0
+      break
+    case "active":
+      activityAdjustment = 0.005
+      break
+    case "very_active":
+      activityAdjustment = 0.01
+      break
+  }
+
+  // Weight goal adjustment
+  let goalAdjustment = 0
+  switch (weightGoal) {
+    case "maintain":
+      goalAdjustment = 0
+      break
+    case "gain":
+      goalAdjustment = 0.005
+      break
+    case "lose":
+      goalAdjustment = -0.005
+      break
+  }
+
+  // Calculate feeding percentage
+  let feedingPercent = basePercent + activityAdjustment + goalAdjustment
+
+  // Safety limits
+  feedingPercent = Math.max(0.015, Math.min(0.04, feedingPercent))
+
+  const dailyFood = Math.round(weight * feedingPercent * 1000)
+
+  return {
+    dailyFood,
+    feedingPercent: feedingPercent * 100,
+    meat: Math.round(dailyFood * 0.8),
+    bone: Math.round(dailyFood * 0.1),
+    liver: Math.round(dailyFood * 0.05),
+    organ: Math.round(dailyFood * 0.05),
+    note: "Weigh your cat every 1–2 weeks and adjust feeding as needed.",
   }
 }

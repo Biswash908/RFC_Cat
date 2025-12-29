@@ -53,9 +53,11 @@ export type RootStackParamList = {
 const Stack = createStackNavigator<RootStackParamList>()
 const Tab = createBottomTabNavigator()
 
-// Bottom Tab Navigator (Home, Info & Support, Recipe)
+// ---------- BOTTOM TAB NAV ----------
 const HomeTabs = () => {
   const insets = useSafeAreaInsets()
+  const isIOS = Platform.OS === "ios"
+  const isPad = Platform.isPad
 
   return (
     <Tab.Navigator
@@ -63,88 +65,79 @@ const HomeTabs = () => {
       screenOptions={({ route }) => ({
         tabBarIcon: () => {
           let label: string
+          let icon: React.ReactNode
+
+          // Unified container styles
+          const tabStyle = {
+            alignItems: "center" as const,
+            justifyContent: "center" as const,
+            flex: 1,
+            minWidth: isPad ? 110 : 80, // prevent wrapping on iPad
+          }
+
+          const textStyle = {
+            color: "white",
+            fontSize: isPad ? 12 : 10,
+            marginTop: 2,
+            fontFamily: "Roboto-Regular",
+            textAlign: "center" as const,
+            flexWrap: "nowrap" as const,
+            includeFontPadding: false,
+          }
 
           if (route.name === "Home") {
             label = "Feeding Calc"
-            return (
-              <View style={{ alignItems: "center", justifyContent: "center" }}>
-                <FontAwesome6 name="calculator" size={22} color={"white"} style={{ textAlign: "center" }} />
-                <Text
-                  style={{
-                    color: "white",
-                    fontSize: 10,
-                    marginTop: 2,
-                    fontFamily: "Roboto-Regular",
-                  }}
-                >
-                  {label}
-                </Text>
-              </View>
-            )
+            icon = <FontAwesome6 name="calculator" size={isPad ? 26 : 22} color="white" />
           } else if (route.name === "Recipe") {
             label = "Recipes"
-            return (
-              <View style={{ alignItems: "center", justifyContent: "center" }}>
-                <FontAwesome6 name="book" size={22} color={"white"} style={{ textAlign: "center" }} />
-                <Text
-                  style={{
-                    color: "white",
-                    fontSize: 10,
-                    marginTop: 2,
-                    fontFamily: "Roboto-Regular",
-                  }}
-                >
-                  {label}
-                </Text>
-              </View>
-            )
+            icon = <FontAwesome6 name="book" size={isPad ? 26 : 22} color="white" />
           } else if (route.name === "FoodCalculator") {
             label = "Daily Portions"
-            return (
-              <View style={{ alignItems: "center", justifyContent: "center", height: 40 }}>
-  <View style={{ position: "absolute", top: -7 }}>
-    <PetFoodBowlIcon size={40} color="white" />
-  </View>
-  <Text
-    style={{
-      color: "white",
-      fontSize: 10,
-      position: "absolute",
-      bottom: 0,
-      fontFamily: "Roboto-Regular",
-    }}
-  >
-    {label}
-  </Text>
-</View>
-
-
+            icon = (
+              <View
+                style={{
+                  alignItems: "center",
+                  justifyContent: "center",
+                  height: isPad ? 30 : 24,
+                }}
+              >
+                <PetFoodBowlIcon
+                  size={isPad ? 36 : 42}
+                  color="white"
+                  style={{
+                    marginBottom: isPad ? 0 : 0,
+                  }}
+                />
+              </View>
             )
           } else if (route.name === "InfoAndSupport") {
             label = "Support"
-            return (
-              <View style={{ alignItems: "center", justifyContent: "center" }}>
-                <FontAwesome6 name="gear" size={22} color={"white"} style={{ textAlign: "center" }} />
-                <Text
-                  style={{
-                    color: "white",
-                    fontSize: 10,
-                    marginTop: 2,
-                    fontFamily: "Roboto-Regular",
-                  }}
-                >
-                  {label}
-                </Text>
-              </View>
-            )
+            icon = <FontAwesome6 name="gear" size={isPad ? 26 : 22} color="white" />
           }
+
+          return (
+            <View style={tabStyle}>
+              {icon}
+              <Text
+                style={textStyle}
+                numberOfLines={1}
+                ellipsizeMode="clip"
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
+              >
+                {label}
+              </Text>
+            </View>
+          )
         },
         tabBarShowLabel: false,
         tabBarStyle: {
           backgroundColor: "#000080",
-          height: Platform.OS === "ios" ? 75 : 60,
-          paddingBottom: Platform.OS === "ios" ? insets.bottom / 2 : 8,
+          height: isIOS ? 75 : 60,
+          paddingBottom: isIOS ? insets.bottom / 2 : 8,
           paddingTop: 6,
+          flexDirection: "row",
+          justifyContent: "space-evenly",
         },
       })}
     >
@@ -155,9 +148,7 @@ const HomeTabs = () => {
         options={{
           title: "Recipes",
           headerTitleAlign: "center",
-          headerStyle: {
-            backgroundColor: "white",
-          },
+          headerStyle: { backgroundColor: "white" },
           headerTitleStyle: {
             fontSize: 20,
             fontWeight: "600",
@@ -172,9 +163,7 @@ const HomeTabs = () => {
         options={{
           title: "Daily Portions",
           headerTitleAlign: "center",
-          headerStyle: {
-            backgroundColor: "white",
-          },
+          headerStyle: { backgroundColor: "white" },
           headerTitleStyle: {
             fontSize: 20,
             fontWeight: "600",
@@ -189,9 +178,7 @@ const HomeTabs = () => {
         options={{
           title: "Support",
           headerTitleAlign: "center",
-          headerStyle: {
-            backgroundColor: "white",
-          },
+          headerStyle: { backgroundColor: "white" },
           headerTitleStyle: {
             fontSize: 20,
             fontWeight: "600",
@@ -204,6 +191,7 @@ const HomeTabs = () => {
   )
 }
 
+// ---------- APP ROOT ----------
 const App: React.FC = () => {
   return (
     <SafeAreaProvider>
@@ -222,38 +210,20 @@ const App: React.FC = () => {
                     fontFamily: "Roboto-Medium",
                   },
                   headerTitleAlign: "center",
-                  headerStyle: {
-                    backgroundColor: "white",
-                  },
+                  headerStyle: { backgroundColor: "white" },
                   headerBackTitle: "Back",
                 }}
               >
                 <Stack.Screen name="HomeTabs" component={HomeTabs} options={{ headerShown: false }} />
-                <Stack.Screen
-                  name="FoodInfoScreen"
-                  component={FoodInfoScreen}
-                  options={{ title: "Food Information" }}
-                />
+                <Stack.Screen name="FoodInfoScreen" component={FoodInfoScreen} options={{ title: "Food Information" }} />
                 <Stack.Screen name="SearchScreen" component={SearchScreen} options={{ title: "Search Ingredients" }} />
                 <Stack.Screen name="CalculatorScreen" component={CalculatorScreen} />
-                <Stack.Screen
-                  name="CustomRatioScreen"
-                  component={CustomRatioScreen}
-                  options={{ title: "Custom Ratio" }}
-                />
+                <Stack.Screen name="CustomRatioScreen" component={CustomRatioScreen} options={{ title: "Custom Ratio" }} />
                 <Stack.Screen name="InfoAndSupportScreen" component={InfoAndSupportScreen} />
                 <Stack.Screen name="RecipeScreen" component={RecipeScreen} />
                 <Stack.Screen name="FAQScreen" component={FAQScreen} options={{ title: "App FAQs" }} />
-                <Stack.Screen
-                  name="RawFeedingFAQScreen"
-                  component={RawFeedingFAQScreen}
-                  options={{ title: "Raw Feeding FAQs" }}
-                />
-                <Stack.Screen
-                  name="FoodCalculatorScreen"
-                  component={FoodCalculatorScreen}
-                  options={{ title: "Daily Portions" }}
-                />
+                <Stack.Screen name="RawFeedingFAQScreen" component={RawFeedingFAQScreen} options={{ title: "Raw Feeding FAQs" }} />
+                <Stack.Screen name="FoodCalculatorScreen" component={FoodCalculatorScreen} options={{ title: "Daily Portions" }} />
               </Stack.Navigator>
             </NavigationContainer>
           </RecipeProvider>
