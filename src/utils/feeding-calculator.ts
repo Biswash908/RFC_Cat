@@ -30,12 +30,17 @@ export interface BasicFeedingResult {
 }
 
 export interface AdvancedFeedingResult {
-  dailyFood: number // grams
+  minDailyFood: number // grams
+  maxDailyFood: number // grams
   feedingPercent: number // % (e.g., 2.5)
-  meat: number // grams (80%)
-  bone: number // grams (10%)
-  liver: number // grams (5%)
-  organ: number // grams (5%)
+  minMeat: number // grams (80%)
+  maxMeat: number // grams (80%)
+  minBone: number // grams (10%)
+  maxBone: number // grams (10%)
+  minLiver: number // grams (5%)
+  maxLiver: number // grams (5%)
+  minOrgan: number // grams (5%)
+  maxOrgan: number // grams (5%)
   note?: string
 }
 
@@ -142,12 +147,17 @@ export const calculateAdvancedFeeding = (
     const avgDaily = Math.round((minDaily + maxDaily) / 2)
 
     return {
-      dailyFood: avgDaily,
+      minDailyFood: minDaily,
+      maxDailyFood: maxDaily,
       feedingPercent: (avgDaily / (weight * 1000)) * 100,
-      meat: Math.round(avgDaily * 0.8),
-      bone: Math.round(avgDaily * 0.1),
-      liver: Math.round(avgDaily * 0.05),
-      organ: Math.round(avgDaily * 0.05),
+      minMeat: Math.round(minDaily * 0.8),
+      maxMeat: Math.round(maxDaily * 0.8),
+      minBone: Math.round(minDaily * 0.1),
+      maxBone: Math.round(maxDaily * 0.1),
+      minLiver: Math.round(minDaily * 0.05),
+      maxLiver: Math.round(maxDaily * 0.05),
+      minOrgan: Math.round(minDaily * 0.05),
+      maxOrgan: Math.round(maxDaily * 0.05),
       note: `Free-feeding recommended. Range: ${minDaily}–${maxDaily} g/day`,
     }
   }
@@ -197,15 +207,30 @@ export const calculateAdvancedFeeding = (
   // Safety limits
   feedingPercent = Math.max(0.015, Math.min(0.04, feedingPercent))
 
-  const dailyFood = Math.round(weight * feedingPercent * 1000)
+  const variationPercent = 0.0025
+
+  let minPercent = feedingPercent - variationPercent
+  let maxPercent = feedingPercent + variationPercent
+
+  // Apply safety limits to range
+  if (minPercent < 0.015) minPercent = 0.015
+  if (maxPercent > 0.04) maxPercent = 0.04
+
+  const minDailyFood = Math.round(weight * minPercent * 1000)
+  const maxDailyFood = Math.round(weight * maxPercent * 1000)
 
   return {
-    dailyFood,
+    minDailyFood,
+    maxDailyFood,
     feedingPercent: feedingPercent * 100,
-    meat: Math.round(dailyFood * 0.8),
-    bone: Math.round(dailyFood * 0.1),
-    liver: Math.round(dailyFood * 0.05),
-    organ: Math.round(dailyFood * 0.05),
-    note: "Weigh your cat every 1–2 weeks and adjust feeding as needed.",
+    minMeat: Math.round(minDailyFood * 0.8),
+    maxMeat: Math.round(maxDailyFood * 0.8),
+    minBone: Math.round(minDailyFood * 0.1),
+    maxBone: Math.round(maxDailyFood * 0.1),
+    minLiver: Math.round(minDailyFood * 0.05),
+    maxLiver: Math.round(maxDailyFood * 0.05),
+    minOrgan: Math.round(minDailyFood * 0.05),
+    maxOrgan: Math.round(maxDailyFood * 0.05),
+    note: "Feed anywhere within this range according to your cat’s needs. All cats are different. Observe your cat and choose the amount that feels right for them.",
   }
 }

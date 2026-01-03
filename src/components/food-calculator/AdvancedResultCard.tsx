@@ -12,7 +12,9 @@ export const AdvancedResultCard: React.FC<AdvancedResultCardProps> = ({ result }
       <Text style={styles.title}>Recommended Daily Feed (Advanced)</Text>
 
       <View style={styles.mainResult}>
-        <Text style={styles.mainValue}>{result.dailyFood} g</Text>
+        <Text style={styles.mainValue}>
+          {result.minDailyFood}–{result.maxDailyFood} g
+        </Text>
         <Text style={styles.subText}>≈ {result.feedingPercent.toFixed(2)}% of body weight</Text>
       </View>
 
@@ -21,22 +23,30 @@ export const AdvancedResultCard: React.FC<AdvancedResultCardProps> = ({ result }
       <View style={styles.componentsContainer}>
         <View style={styles.componentRow}>
           <Text style={styles.componentLabel}>🥩 Meat (80%)</Text>
-          <Text style={styles.componentValue}>{result.meat} g</Text>
+          <Text style={styles.componentValue}>
+            {result.minMeat}–{result.maxMeat} g
+          </Text>
         </View>
 
         <View style={styles.componentRow}>
           <Text style={styles.componentLabel}>🦴 Bone (10%)</Text>
-          <Text style={styles.componentValue}>{result.bone} g</Text>
+          <Text style={styles.componentValue}>
+            {result.minBone}–{result.maxBone} g
+          </Text>
         </View>
 
         <View style={styles.componentRow}>
           <Text style={styles.componentLabel}>🩸 Liver (5%)</Text>
-          <Text style={styles.componentValue}>{result.liver} g</Text>
+          <Text style={styles.componentValue}>
+            {result.minLiver}–{result.maxLiver} g
+          </Text>
         </View>
 
         <View style={styles.componentRow}>
           <Text style={styles.componentLabel}>🧠 Other Organ (5%)</Text>
-          <Text style={styles.componentValue}>{result.organ} g</Text>
+          <Text style={styles.componentValue}>
+            {result.minOrgan}–{result.maxOrgan} g
+          </Text>
         </View>
       </View>
 
