@@ -106,4 +106,3 @@ export const appFaqs = [
         "Kittens should be fed as much as they would eat (as they are still growing), ideally on a 75:15:10 ratio and adult cats should be fed 2-3% of their ideal body weight on a normal 80:10:10 ratio.",
     },
   ]
-  

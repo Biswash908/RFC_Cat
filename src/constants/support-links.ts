@@ -43,4 +43,3 @@ export interface SupportLink {
       value: "RawFeedingFAQScreen",
     },
   ]
-  

@@ -35,4 +35,3 @@ export interface RatioValidationResult {
     const sanitized = Number.parseFloat(value.replace(/[^0-9.]/g, ""))
     return isNaN(sanitized) ? 0 : sanitized
   }
-  

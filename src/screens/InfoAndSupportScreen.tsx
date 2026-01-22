@@ -1,12 +1,15 @@
 "use client"
 
 import { useLayoutEffect } from "react"
-import { View, StyleSheet, StatusBar, Linking } from "react-native"
+import { View, StyleSheet, StatusBar, Linking, TouchableOpacity, Text, ScrollView } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
+import { useSaveContext } from "../context/SaveContext"
 import { SupportLinkItem } from "../components/support/SupportLinkItem"
 import { supportLinks } from "../constants/support-links"
 
 const InfoAndSupportScreen = ({ navigation }) => {
+  const { resetFoodInputWalkthrough } = useSaveContext()
+
   const handleLinkPress = (action: string, value: string) => {
     if (action === "link") {
       Linking.openURL(value).catch((err) => console.error("Couldn't load page", err))
@@ -17,6 +20,11 @@ const InfoAndSupportScreen = ({ navigation }) => {
     }
   }
 
+  const handleShowWalkthroughAgain = async () => {
+    await resetFoodInputWalkthrough()
+    navigation.navigate("Home")
+  }
+
   useLayoutEffect(() => {
     navigation.setOptions({ title: "Support" })
   }, [navigation])
@@ -24,7 +32,7 @@ const InfoAndSupportScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
-      <View style={styles.container}>
+      <ScrollView style={styles.container}>
         {supportLinks.map((link) => (
           <SupportLinkItem
             key={link.id}
@@ -33,7 +41,11 @@ const InfoAndSupportScreen = ({ navigation }) => {
             onPress={() => handleLinkPress(link.action, link.value)}
           />
         ))}
-      </View>
+
+        <TouchableOpacity style={styles.walkthroughButton} onPress={handleShowWalkthroughAgain}>
+          <Text style={styles.walkthroughButtonText}>Show Tutorial Again</Text>
+        </TouchableOpacity>
+      </ScrollView>
     </SafeAreaView>
   )
 }
@@ -44,10 +56,24 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF",
   },
   container: {
-    flex: 1,
     paddingHorizontal: 16,
     paddingTop: 0,
-    justifyContent: "flex-start",
+  },
+  walkthroughButton: {
+    backgroundColor: "#000080",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  walkthroughButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
+    fontFamily: "Roboto-Medium",
   },
 })
 

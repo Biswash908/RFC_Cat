@@ -3,7 +3,9 @@
 import React, { useState } from "react"
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, StatusBar, Alert } from "react-native"
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
-import { useNavigation } from "@react-navigation/native"
+import { useNavigation, useFocusEffect } from "@react-navigation/native"
+import AsyncStorage from "@react-native-async-storage/async-storage"
+import { useSaveContext } from "../context/SaveContext"
 import { WeightInput } from "../components/food-calculator/WeightInput"
 import { DropdownField } from "../components/food-calculator/DropdownField"
 import { BasicResultCard } from "../components/food-calculator/BasicResultCard"
@@ -18,6 +20,7 @@ import {
 const FoodCalculatorScreen: React.FC = () => {
   const navigation = useNavigation()
   const insets = useSafeAreaInsets()
+  const { selectedRatio, setSelectedRatio } = useSaveContext()
   const [weight, setWeight] = useState("")
   const [ageGroup, setAgeGroup] = useState("adult")
   const [unit, setUnit] = useState("kg")
@@ -31,6 +34,58 @@ const FoodCalculatorScreen: React.FC = () => {
   React.useEffect(() => {
     navigation.setOptions({ title: "Daily Portions" })
   }, [navigation])
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const refreshRatio = async () => {
+        try {
+          // Check temp storage first (from CalculatorScreen)
+          const tempMeat = await AsyncStorage.getItem("tempMeatRatio")
+          const tempBone = await AsyncStorage.getItem("tempBoneRatio")
+          const tempOrgan = await AsyncStorage.getItem("tempOrganRatio")
+
+          if (tempMeat && tempBone && tempOrgan) {
+            const ratio = {
+              meat: Number(tempMeat),
+              bone: Number(tempBone),
+              organ: Number(tempOrgan),
+            }
+            console.log("[v0] FoodCalculatorScreen - Refreshed ratio from temp storage:", ratio)
+            setSelectedRatio(ratio)
+            return
+          }
+
+          // Fallback to regular storage
+          const savedMeat = await AsyncStorage.getItem("meatRatio")
+          const savedBone = await AsyncStorage.getItem("boneRatio")
+          const savedOrgan = await AsyncStorage.getItem("organRatio")
+
+          if (savedMeat && savedBone && savedOrgan) {
+            const ratio = {
+              meat: Number(savedMeat),
+              bone: Number(savedBone),
+              organ: Number(savedOrgan),
+            }
+            console.log("[v0] FoodCalculatorScreen - Refreshed ratio from regular storage:", ratio)
+            setSelectedRatio(ratio)
+            return
+          }
+
+          // Default fallback
+          console.log("[v0] FoodCalculatorScreen - No stored ratio, using default 80:10:10")
+          setSelectedRatio({ meat: 80, bone: 10, organ: 10 })
+        } catch (error) {
+          console.error("[v0] FoodCalculatorScreen - Failed to refresh ratio:", error)
+        }
+      }
+
+      refreshRatio()
+    }, [setSelectedRatio]),
+  )
+
+  React.useEffect(() => {
+    console.log("[v0] FoodCalculatorScreen - selectedRatio from context:", selectedRatio)
+  }, [selectedRatio])
 
   const handleCalculate = () => {
     if (!weight || Number.parseFloat(weight) <= 0) {
@@ -181,7 +236,7 @@ const FoodCalculatorScreen: React.FC = () => {
           </View>
 
           {basicResult && <BasicResultCard result={basicResult} />}
-          {advancedResult && <AdvancedResultCard result={advancedResult} />}
+          {advancedResult && <AdvancedResultCard result={advancedResult} ratio={selectedRatio} />}
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity style={styles.primaryButton} onPress={handleCalculate}>

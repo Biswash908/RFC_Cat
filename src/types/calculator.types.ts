@@ -23,4 +23,3 @@ export interface CorrectorValues {
   }
   
   export type RatioType = "80:10:10" | "75:15:10" | "custom"
-  

@@ -21,4 +21,3 @@ export interface Ingredient {
     organ: number
     weight: number
   }
-  

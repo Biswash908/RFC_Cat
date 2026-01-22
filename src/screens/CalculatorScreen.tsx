@@ -43,7 +43,7 @@ type CalculatorScreenRouteProp = RouteProp<RootStackParamList, "CalculatorScreen
 
 const CalculatorScreen: React.FC = () => {
   const route = useRoute<CalculatorScreenRouteProp>()
-  const { customRatios } = useSaveContext()
+  const { setSelectedRatio } = useSaveContext() // Get setSelectedRatio from SaveContext
   const navigation = useNavigation()
   const { unit } = useUnit()
 
@@ -208,6 +208,9 @@ const CalculatorScreen: React.FC = () => {
 
   const handleSetRatio = async (meat: number, bone: number, organ: number, ratio: string) => {
     await setRatio(meat, bone, organ, ratio)
+
+    console.log("[v0] CalculatorScreen - Calling setSelectedRatio with:", { meat, bone, organ })
+    setSelectedRatio({ meat, bone, organ })
     ;(navigation as any).setParams({
       ratio: {
         meat,
@@ -223,20 +226,20 @@ const CalculatorScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.container}>
-          <View style={styles.topBar} />
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.container}>
+        <View style={styles.topBar} />
 
-          <View style={styles.ratioTitleContainer}>
-            <Text style={styles.ratioTitle}>Set your Meat: Bone: Organ ratio:</Text>
-            <InfoButton title="Ratio Info" message={RATIO_INFO_TEXT} />
-          </View>
+        <View style={styles.ratioTitleContainer}>
+          <Text style={styles.ratioTitle}>Set your Meat: Bone: Organ ratio:</Text>
+          <InfoButton title="Ratio Info" message={RATIO_INFO_TEXT} />
+        </View>
 
-          <RatioSelector selectedRatio={selectedRatio} onSelectRatio={handleSetRatio} />
+        <RatioSelector selectedRatio={selectedRatio} onSelectRatio={handleSetRatio} />
 
-          <CustomRatioButton selectedRatio={selectedRatio} customRatio={customRatio} onPress={navigateToCustomRatio} />
+        <CustomRatioButton selectedRatio={selectedRatio} customRatio={customRatio} onPress={navigateToCustomRatio} />
 
-          <CorrectorGrid meatCorrect={meatCorrect} boneCorrect={boneCorrect} organCorrect={organCorrect} unit={unit} />
-        </KeyboardAvoidingView>
+        <CorrectorGrid meatCorrect={meatCorrect} boneCorrect={boneCorrect} organCorrect={organCorrect} unit={unit} />
+      </KeyboardAvoidingView>
     </SafeAreaView>
   )
 }

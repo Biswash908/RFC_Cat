@@ -59,4 +59,3 @@ export const formatWeight = (value: number, ingredient: string, unit: string): s
     const total = meat + bone + organ
     return total > 0 && Math.abs(total - 100) < 5
   }
-  

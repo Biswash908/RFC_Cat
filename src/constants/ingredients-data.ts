@@ -85,4 +85,3 @@ export interface IngredientData {
     { id: "75", name: "Turkey Thigh", meat: 81, bone: 19, organ: 0 },
     { id: "76", name: "Turkey Wing", meat: 66, bone: 34, organ: 0 },
   ]
-  

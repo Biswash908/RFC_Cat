@@ -1,17 +1,20 @@
 "use client"
 
 import type React from "react"
-import { useEffect } from "react"
-import { View, StyleSheet, StatusBar, Platform, Dimensions } from "react-native"
+import { useEffect, useState, useRef } from "react"
+import { View, StyleSheet, StatusBar, Platform, Dimensions, InteractionManager } from "react-native"
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { useNavigation } from "@react-navigation/native"
+import { CopilotStep, useCopilot } from "react-native-copilot"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { useUnit } from "../context/UnitContext"
+import { useSaveContext } from "../context/SaveContext"
 import { TopBar } from "../components/food-input/ui/TopBar"
 import { TotalBar } from "../components/food-input/ui/TotalBar"
 import { IngredientList } from "../components/food-input/ui/IngredientList"
 import { ActionButtons } from "../components/food-input/ui/ActionButtons"
 import { SaveRecipeModal } from "../components/food-input/modals/SaveRecipeModal"
+import { WalkthroughableView } from "../components/common/WalkthroughableView"
 import { useFoodInputLogic } from "../hooks/useFoodInputLogic"
 import { useRecipeSaving } from "../hooks/useRecipeSaving"
 import { useRatioState } from "../hooks/useRatioState"
@@ -30,6 +33,10 @@ const FoodInputScreen: React.FC = () => {
   const insets = useSafeAreaInsets()
   const navigation = useNavigation()
   const { unit: globalUnit } = useUnit()
+  const { hasSeenFoodInputWalkthrough, setFoodInputWalkthroughSeen } = useSaveContext()
+  const { start, copilotEvents } = useCopilot()
+  const [containerReady, setContainerReady] = useState(false)
+  const startedRef = useRef(false)
 
   const {
     ingredients,
@@ -102,6 +109,32 @@ const FoodInputScreen: React.FC = () => {
     checkForChanges()
   }, [ingredients, newMeat, newBone, newOrgan, selectedRatio, checkForChanges])
 
+  // Setup walkthrough
+  useEffect(() => {
+    if (!containerReady || startedRef.current || hasSeenFoodInputWalkthrough) return
+
+    startedRef.current = true
+
+    const timeout = setTimeout(() => {
+      InteractionManager.runAfterInteractions(() => {
+        requestAnimationFrame(() => {
+          start()
+        })
+      })
+    }, 300)
+
+    return () => clearTimeout(timeout)
+  }, [containerReady, hasSeenFoodInputWalkthrough, start])
+
+  // Handle walkthrough completion
+  useEffect(() => {
+    const unsubscribe = copilotEvents.on("stop", async () => {
+      await setFoodInputWalkthroughSeen(true)
+    })
+
+    return () => unsubscribe?.()
+  }, [copilotEvents, setFoodInputWalkthroughSeen])
+
   const handleCalculate = async () => {
     const tempMeatRatio = await AsyncStorage.getItem("tempMeatRatio")
     const tempBoneRatio = await AsyncStorage.getItem("tempBoneRatio")
@@ -138,30 +171,56 @@ const FoodInputScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
-      <View style={styles.container}>
+      <View
+        style={styles.container}
+        onLayout={(e) => {
+          const { width, height } = e.nativeEvent.layout
+          if (width > 0 && height > 0 && !containerReady) {
+            setContainerReady(true)
+          }
+        }}
+      >
         <TopBar recipeName={recipeName} />
 
-        <TotalBar
-          totalMeat={totalMeat}
-          totalBone={totalBone}
-          totalOrgan={totalOrgan}
-          totalWeight={totalWeight}
-          unit={globalUnit}
-          formatWeight={formatWeight}
-        />
+        <CopilotStep
+          name="totalBar"
+          order={1}
+          text="This bar shows the total amount of ingredients in your recipe. Keep an eye here to make sure your recipe is balanced."
+          verticalOffset={20}
+        >
+          <WalkthroughableView>
+            <TotalBar
+              totalMeat={totalMeat}
+              totalBone={totalBone}
+              totalOrgan={totalOrgan}
+              totalWeight={totalWeight}
+              unit={globalUnit}
+              formatWeight={formatWeight}
+            />
+          </WalkthroughableView>
+        </CopilotStep>
 
         <View style={[styles.contentContainer, { paddingBottom: (isIOS ? 120 : 100) + insets.bottom }]}>
-          <IngredientList
-            ingredients={ingredients}
-            formatWeight={formatWeight}
-            onEdit={(ingredient) =>
-              navigation.navigate("FoodInfoScreen", {
-                ingredient: ingredient,
-                editMode: true,
-              })
-            }
-            onDelete={handleDeleteIngredient}
-          />
+          <CopilotStep
+            name="ingredientList"
+            order={3}
+            text="Here is the list of ingredients you've added. You can review, edit, or remove items before saving."
+            verticalOffset={10}
+          >
+            <WalkthroughableView>
+              <IngredientList
+                ingredients={ingredients}
+                formatWeight={formatWeight}
+                onEdit={(ingredient) =>
+                  navigation.navigate("FoodInfoScreen", {
+                    ingredient: ingredient,
+                    editMode: true,
+                  })
+                }
+                onDelete={handleDeleteIngredient}
+              />
+            </WalkthroughableView>
+          </CopilotStep>
         </View>
 
         <SaveRecipeModal

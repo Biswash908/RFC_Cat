@@ -5,6 +5,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
 import { Text, View, StatusBar, Platform } from "react-native"
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context"
 import { FontAwesome6 } from "@expo/vector-icons"
+import { CopilotProvider } from "react-native-copilot"
 
 import FoodInputScreen from "./src/screens/FoodInputScreen"
 import FoodInfoScreen from "./src/screens/FoodInfoScreen"
@@ -16,11 +17,13 @@ import CustomRatioScreen from "./src/screens/CustomRatioScreen"
 import FAQScreen from "./src/screens/FAQScreen"
 import RawFeedingFAQScreen from "./src/screens/RawFeedingFAQScreen"
 import FoodCalculatorScreen from "./src/screens/FoodCalculatorScreen"
+import OnboardingScreen from "./src/screens/OnboardingScreen"
 
 import { UnitProvider } from "./src/context/UnitContext"
 import { SaveProvider } from "./src/context/SaveContext"
 import { RecipeProvider } from "./src/context/RecipeContext"
 import { PetFoodBowlIcon } from "./src/components/icons/PetFoodBowlIcon"
+import { useSaveContext } from "./src/context/SaveContext"
 
 // Define the ingredient type
 interface Ingredient {
@@ -29,6 +32,8 @@ interface Ingredient {
 
 // Define the stack's parameter list
 export type RootStackParamList = {
+  OnboardingScreen: undefined
+  HomeTabs: undefined
   FoodInputScreen: { fromRecipe?: boolean }
   FoodInfoScreen: { ingredient: Ingredient; editMode: boolean }
   SearchScreen: undefined
@@ -191,6 +196,42 @@ const HomeTabs = () => {
   )
 }
 
+const RootNavigator = () => {
+  const { hasCompletedOnboarding } = useSaveContext()
+
+  return (
+    <Stack.Navigator
+      initialRouteName={hasCompletedOnboarding ? "HomeTabs" : "OnboardingScreen"}
+      screenOptions={{
+        headerTitleStyle: {
+          fontSize: 20,
+          fontWeight: "600",
+          color: "black",
+          fontFamily: "Roboto-Medium",
+        },
+        headerTitleAlign: "center",
+        headerStyle: { backgroundColor: "white" },
+        headerBackTitle: "Back",
+      }}
+    >
+      <Stack.Screen name="OnboardingScreen" component={OnboardingScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="HomeTabs" component={HomeTabs} options={{ headerShown: false }} />
+      <Stack.Screen name="FoodInfoScreen" component={FoodInfoScreen} options={{ title: "Food Information" }} />
+      <Stack.Screen name="SearchScreen" component={SearchScreen} options={{ title: "Search Ingredients" }} />
+      <Stack.Screen name="CalculatorScreen" component={CalculatorScreen} />
+      <Stack.Screen name="CustomRatioScreen" component={CustomRatioScreen} options={{ title: "Custom Ratio" }} />
+      <Stack.Screen name="InfoAndSupportScreen" component={InfoAndSupportScreen} />
+      <Stack.Screen name="RecipeScreen" component={RecipeScreen} />
+      <Stack.Screen name="FAQScreen" component={FAQScreen} options={{ title: "App FAQs" }} />
+      <Stack.Screen
+        name="RawFeedingFAQScreen"
+        component={RawFeedingFAQScreen}
+        options={{ title: "Raw Feeding FAQs" }}
+      />
+    </Stack.Navigator>
+  )
+}
+
 // ---------- APP ROOT ----------
 const App: React.FC = () => {
   return (
@@ -199,33 +240,19 @@ const App: React.FC = () => {
       <UnitProvider>
         <SaveProvider>
           <RecipeProvider>
-            <NavigationContainer>
-              <Stack.Navigator
-                initialRouteName="HomeTabs"
-                screenOptions={{
-                  headerTitleStyle: {
-                    fontSize: 20,
-                    fontWeight: "600",
-                    color: "black",
-                    fontFamily: "Roboto-Medium",
-                  },
-                  headerTitleAlign: "center",
-                  headerStyle: { backgroundColor: "white" },
-                  headerBackTitle: "Back",
-                }}
-              >
-                <Stack.Screen name="HomeTabs" component={HomeTabs} options={{ headerShown: false }} />
-                <Stack.Screen name="FoodInfoScreen" component={FoodInfoScreen} options={{ title: "Food Information" }} />
-                <Stack.Screen name="SearchScreen" component={SearchScreen} options={{ title: "Search Ingredients" }} />
-                <Stack.Screen name="CalculatorScreen" component={CalculatorScreen} />
-                <Stack.Screen name="CustomRatioScreen" component={CustomRatioScreen} options={{ title: "Custom Ratio" }} />
-                <Stack.Screen name="InfoAndSupportScreen" component={InfoAndSupportScreen} />
-                <Stack.Screen name="RecipeScreen" component={RecipeScreen} />
-                <Stack.Screen name="FAQScreen" component={FAQScreen} options={{ title: "App FAQs" }} />
-                <Stack.Screen name="RawFeedingFAQScreen" component={RawFeedingFAQScreen} options={{ title: "Raw Feeding FAQs" }} />
-                <Stack.Screen name="FoodCalculatorScreen" component={FoodCalculatorScreen} options={{ title: "Daily Portions" }} />
-              </Stack.Navigator>
-            </NavigationContainer>
+            <CopilotProvider
+              overlay="svg"
+              animated
+              labels={{
+                skip: "Skip",
+                next: "Next",
+                finish: "Got it",
+              }}
+            >
+              <NavigationContainer>
+                <RootNavigator />
+              </NavigationContainer>
+            </CopilotProvider>
           </RecipeProvider>
         </SaveProvider>
       </UnitProvider>

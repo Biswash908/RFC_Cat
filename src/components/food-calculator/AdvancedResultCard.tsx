@@ -4,48 +4,75 @@ import type { AdvancedFeedingResult } from "../../utils/feeding-calculator"
 
 interface AdvancedResultCardProps {
   result: AdvancedFeedingResult
+  ratio?: { meat: number; bone: number; organ: number } | null
 }
 
-export const AdvancedResultCard: React.FC<AdvancedResultCardProps> = ({ result }) => {
+export const AdvancedResultCard: React.FC<AdvancedResultCardProps> = ({ result, ratio }) => {
+  const meatPercent = ratio ? (ratio.meat / (ratio.meat + ratio.bone + ratio.organ)) * 100 : 80
+  const bonePercent = ratio ? (ratio.bone / (ratio.meat + ratio.bone + ratio.organ)) * 100 : 10
+  const organPercent = ratio ? (ratio.organ / (ratio.meat + ratio.bone + ratio.organ)) * 100 : 10
+
+  const liverPercent = organPercent / 2
+  const otherOrganPercent = organPercent / 2
+
+  const minMeat = Math.round(result.minDaily * (meatPercent / 100))
+  const maxMeat = Math.round(result.maxDaily * (meatPercent / 100))
+  const minBone = Math.round(result.minDaily * (bonePercent / 100))
+  const maxBone = Math.round(result.maxDaily * (bonePercent / 100))
+  const minLiver = Math.round(result.minDaily * (liverPercent / 100))
+  const maxLiver = Math.round(result.maxDaily * (liverPercent / 100))
+  const minOrgan = Math.round(result.minDaily * (otherOrganPercent / 100))
+  const maxOrgan = Math.round(result.maxDaily * (otherOrganPercent / 100))
+
   return (
     <View style={styles.card}>
       <Text style={styles.title}>Recommended Daily Feed (Advanced)</Text>
 
       <View style={styles.mainResult}>
         <Text style={styles.mainValue}>
-          {result.minDailyFood}–{result.maxDailyFood} g
+          {result.minDaily} – {result.maxDaily} g
         </Text>
-        <Text style={styles.subText}>≈ {result.feedingPercent.toFixed(2)}% of body weight</Text>
+        <Text style={styles.subText}>
+          ≈ {result.minPercent.toFixed(2)}% – {result.maxPercent.toFixed(2)}% of body weight
+        </Text>
+      </View>
+
+      <View style={styles.divider} />
+
+      <View style={styles.ratioDisplay}>
+        <Text style={styles.ratioText}>
+          Ratio: {meatPercent.toFixed(0)}% : {bonePercent.toFixed(0)}% : {organPercent.toFixed(0)}%
+        </Text>
       </View>
 
       <View style={styles.divider} />
 
       <View style={styles.componentsContainer}>
         <View style={styles.componentRow}>
-          <Text style={styles.componentLabel}>🥩 Meat (80%)</Text>
+          <Text style={styles.componentLabel}>🥩 Meat ({meatPercent.toFixed(0)}%)</Text>
           <Text style={styles.componentValue}>
-            {result.minMeat}–{result.maxMeat} g
+            {minMeat} – {maxMeat} g
           </Text>
         </View>
 
         <View style={styles.componentRow}>
-          <Text style={styles.componentLabel}>🦴 Bone (10%)</Text>
+          <Text style={styles.componentLabel}>🦴 Bone ({bonePercent.toFixed(0)}%)</Text>
           <Text style={styles.componentValue}>
-            {result.minBone}–{result.maxBone} g
+            {minBone} – {maxBone} g
           </Text>
         </View>
 
         <View style={styles.componentRow}>
-          <Text style={styles.componentLabel}>🩸 Liver (5%)</Text>
+          <Text style={styles.componentLabel}>🩸 Liver ({liverPercent.toFixed(0)}%)</Text>
           <Text style={styles.componentValue}>
-            {result.minLiver}–{result.maxLiver} g
+            {minLiver} – {maxLiver} g
           </Text>
         </View>
 
         <View style={styles.componentRow}>
-          <Text style={styles.componentLabel}>🧠 Other Organ (5%)</Text>
+          <Text style={styles.componentLabel}>🧠 Other Organ ({otherOrganPercent.toFixed(0)}%)</Text>
           <Text style={styles.componentValue}>
-            {result.minOrgan}–{result.maxOrgan} g
+            {minOrgan} – {maxOrgan} g
           </Text>
         </View>
       </View>
@@ -124,5 +151,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#666",
     lineHeight: 18,
+  },
+  ratioDisplay: {
+    alignItems: "center",
+    paddingVertical: 8,
+  },
+  ratioText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#000080",
   },
 })

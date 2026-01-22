@@ -7,4 +7,3 @@ export const UNIT_CONVERSIONS = {
   export const DEFAULT_UNIT = "g"
   
   export const INGREDIENT_TYPES = ["Meat", "Bone", "Organ"] as const
-  

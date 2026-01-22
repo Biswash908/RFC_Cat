@@ -29,4 +29,3 @@ export const GlobalStyles = {
       xl: 20,
     },
   }
-  

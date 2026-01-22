@@ -26,4 +26,3 @@ export const convertWeight = (weight: number): number => {
       organWeight: (totalWeight * percentages.organ) / 100,
     }
   }
-  

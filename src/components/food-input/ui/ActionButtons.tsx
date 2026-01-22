@@ -1,6 +1,8 @@
 import type React from "react"
 import { View, TouchableOpacity, Text, StyleSheet, Platform, Dimensions, ActivityIndicator } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { CopilotStep } from "react-native-copilot"
+import { WalkthroughableView } from "../../common/WalkthroughableView"
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window")
 const isSmallDevice = SCREEN_WIDTH < 375
@@ -37,27 +39,63 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
       ]}
     >
       <View style={styles.buttonRow}>
-        <TouchableOpacity style={styles.ingredientButton} onPress={onAddIngredient}>
-          <Text style={styles.ingredientButtonText}>Add Ingredients</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.saveRecipeButton, isSaving && { backgroundColor: "grey" }]}
-          onPress={onSaveRecipe}
-          disabled={isSaving}
+        <CopilotStep
+          name="addIngredientsButton"
+          order={2}
+          text="Tap this button to add an ingredient from the list. You can then choose the quantity for your recipe."
+          verticalOffset={Platform.OS === "ios" ? 100 : 80}
         >
-          {isSaving ? <ActivityIndicator color="white" /> : <Text style={styles.saveButtonText}>Save Recipe</Text>}
-        </TouchableOpacity>
+          <WalkthroughableView>
+            <TouchableOpacity style={styles.ingredientButton} onPress={onAddIngredient}>
+              <Text style={styles.ingredientButtonText}>Add Ingredients</Text>
+            </TouchableOpacity>
+          </WalkthroughableView>
+        </CopilotStep>
+
+        <CopilotStep
+          name="saveRecipeButton"
+          order={5}
+          text="Tap here to save your recipe. You can load it anytime to reuse or modify it later."
+          verticalOffset={Platform.OS === "ios" ? 100 : 80}
+        >
+          <WalkthroughableView>
+            <TouchableOpacity
+              style={[styles.saveRecipeButton, isSaving && { backgroundColor: "grey" }]}
+              onPress={onSaveRecipe}
+              disabled={isSaving}
+            >
+              {isSaving ? <ActivityIndicator color="white" /> : <Text style={styles.saveButtonText}>Save Recipe</Text>}
+            </TouchableOpacity>
+          </WalkthroughableView>
+        </CopilotStep>
       </View>
 
       <View style={styles.buttonRow}>
-        <TouchableOpacity style={styles.calculateButton} onPress={onCalculate}>
-          <Text style={styles.calculateButtonText}>Ratio / Calculate</Text>
-        </TouchableOpacity>
+        <CopilotStep
+          name="ratioCalculateButton"
+          order={4}
+          text="Use this button to set or calculate the feeding ratio for your recipe. You can select a predefined ratio or create your own custom ratio."
+          verticalOffset={Platform.OS === "ios" ? 100 : 80}
+        >
+          <WalkthroughableView>
+            <TouchableOpacity style={styles.calculateButton} onPress={onCalculate}>
+              <Text style={styles.calculateButtonText}>Ratio / Calculate</Text>
+            </TouchableOpacity>
+          </WalkthroughableView>
+        </CopilotStep>
 
-        <TouchableOpacity style={styles.clearButton} onPress={onClear}>
-          <Text style={styles.clearButtonText}>Clear</Text>
-        </TouchableOpacity>
+        <CopilotStep
+          name="clearButton"
+          order={6}
+          text="Use this button to clear all ingredients and start a new recipe from scratch."
+          verticalOffset={Platform.OS === "ios" ? 100 : 80}
+        >
+          <WalkthroughableView>
+            <TouchableOpacity style={styles.clearButton} onPress={onClear}>
+              <Text style={styles.clearButtonText}>Clear</Text>
+            </TouchableOpacity>
+          </WalkthroughableView>
+        </CopilotStep>
       </View>
     </View>
   )

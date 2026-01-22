@@ -177,4 +177,3 @@ export const DEFAULT_RECIPES = [
       ratio: "65:20:15",
     },
   ]
-  

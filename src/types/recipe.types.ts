@@ -37,4 +37,3 @@ export interface Ingredient {
     originalRatio: RatioObject
     savedCustomRatio?: RatioObject
   }
-  
