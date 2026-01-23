@@ -246,6 +246,7 @@ const App: React.FC = () => {
               labels={{
                 skip: "Skip",
                 next: "Next",
+                previous: "Previous",
                 finish: "Got it",
               }}
             >

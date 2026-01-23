@@ -109,22 +109,25 @@ const FoodInputScreen: React.FC = () => {
     checkForChanges()
   }, [ingredients, newMeat, newBone, newOrgan, selectedRatio, checkForChanges])
 
-  // Setup walkthrough
+  // Setup walkthrough - shows on every launch for now
   useEffect(() => {
-    if (!containerReady || startedRef.current || hasSeenFoodInputWalkthrough) return
+    if (!containerReady || startedRef.current) return
 
     startedRef.current = true
 
     const timeout = setTimeout(() => {
       InteractionManager.runAfterInteractions(() => {
         requestAnimationFrame(() => {
-          start()
+          // Extra delay ensures all layouts are fully measured on iOS
+          setTimeout(() => {
+            start()
+          }, 100)
         })
       })
     }, 300)
 
     return () => clearTimeout(timeout)
-  }, [containerReady, hasSeenFoodInputWalkthrough, start])
+  }, [containerReady, start])
 
   // Handle walkthrough completion
   useEffect(() => {
@@ -186,9 +189,9 @@ const FoodInputScreen: React.FC = () => {
           name="totalBar"
           order={1}
           text="This bar shows the total amount of ingredients in your recipe. Keep an eye here to make sure your recipe is balanced."
-          verticalOffset={20}
+          verticalOffset={0}
         >
-          <WalkthroughableView>
+          <WalkthroughableView style={{ width: "100%", alignSelf: "stretch" }}>
             <TotalBar
               totalMeat={totalMeat}
               totalBone={totalBone}
@@ -203,11 +206,11 @@ const FoodInputScreen: React.FC = () => {
         <View style={[styles.contentContainer, { paddingBottom: (isIOS ? 120 : 100) + insets.bottom }]}>
           <CopilotStep
             name="ingredientList"
-            order={3}
-            text="Here is the list of ingredients you've added. You can review, edit, or remove items before saving."
-            verticalOffset={10}
+            order={2}
+            text="This area will show all the ingredients you add to your recipe. Each ingredient will appear here so you can review, edit, or remove it."
+            verticalOffset={Platform.OS === "ios" ? 0 : 5}
           >
-            <WalkthroughableView>
+            <WalkthroughableView style={{ flex: 1, width: "100%" }}>
               <IngredientList
                 ingredients={ingredients}
                 formatWeight={formatWeight}

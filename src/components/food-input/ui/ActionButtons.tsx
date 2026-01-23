@@ -41,11 +41,11 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
       <View style={styles.buttonRow}>
         <CopilotStep
           name="addIngredientsButton"
-          order={2}
+          order={3}
           text="Tap this button to add an ingredient from the list. You can then choose the quantity for your recipe."
           verticalOffset={Platform.OS === "ios" ? 100 : 80}
         >
-          <WalkthroughableView>
+          <WalkthroughableView style={styles.walkthroughViewFlex}>
             <TouchableOpacity style={styles.ingredientButton} onPress={onAddIngredient}>
               <Text style={styles.ingredientButtonText}>Add Ingredients</Text>
             </TouchableOpacity>
@@ -54,11 +54,11 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
 
         <CopilotStep
           name="saveRecipeButton"
-          order={5}
+          order={4}
           text="Tap here to save your recipe. You can load it anytime to reuse or modify it later."
           verticalOffset={Platform.OS === "ios" ? 100 : 80}
         >
-          <WalkthroughableView>
+          <WalkthroughableView style={styles.walkthroughViewFlex}>
             <TouchableOpacity
               style={[styles.saveRecipeButton, isSaving && { backgroundColor: "grey" }]}
               onPress={onSaveRecipe}
@@ -73,11 +73,11 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
       <View style={styles.buttonRow}>
         <CopilotStep
           name="ratioCalculateButton"
-          order={4}
+          order={5}
           text="Use this button to set or calculate the feeding ratio for your recipe. You can select a predefined ratio or create your own custom ratio."
           verticalOffset={Platform.OS === "ios" ? 100 : 80}
         >
-          <WalkthroughableView>
+          <WalkthroughableView style={styles.walkthroughViewFlex}>
             <TouchableOpacity style={styles.calculateButton} onPress={onCalculate}>
               <Text style={styles.calculateButtonText}>Ratio / Calculate</Text>
             </TouchableOpacity>
@@ -90,7 +90,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
           text="Use this button to clear all ingredients and start a new recipe from scratch."
           verticalOffset={Platform.OS === "ios" ? 100 : 80}
         >
-          <WalkthroughableView>
+          <WalkthroughableView style={styles.walkthroughViewFlex}>
             <TouchableOpacity style={styles.clearButton} onPress={onClear}>
               <Text style={styles.clearButtonText}>Clear</Text>
             </TouchableOpacity>
@@ -116,6 +116,10 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: "row",
     marginBottom: 4,
+    gap: rs(5),
+  },
+  walkthroughViewFlex: {
+    flex: 1,
   },
   ingredientButton: {
     flex: 1,
@@ -123,7 +127,6 @@ const styles = StyleSheet.create({
     paddingVertical: vs(isSmallDevice ? 8 : 10),
     paddingHorizontal: rs(10),
     borderRadius: 10,
-    marginRight: rs(5),
     alignItems: "center",
     justifyContent: "center",
   },
@@ -133,7 +136,6 @@ const styles = StyleSheet.create({
     paddingVertical: vs(isSmallDevice ? 8 : 10),
     paddingHorizontal: rs(10),
     borderRadius: 10,
-    marginLeft: rs(5),
     alignItems: "center",
     justifyContent: "center",
   },
@@ -153,7 +155,6 @@ const styles = StyleSheet.create({
     paddingVertical: vs(isSmallDevice ? 8 : 10),
     paddingHorizontal: rs(10),
     borderRadius: 10,
-    marginRight: rs(5),
     alignItems: "center",
     justifyContent: "center",
   },
@@ -168,7 +169,6 @@ const styles = StyleSheet.create({
     paddingVertical: vs(isSmallDevice ? 8 : 10),
     paddingHorizontal: rs(10),
     borderRadius: 10,
-    marginLeft: rs(5),
     alignItems: "center",
     justifyContent: "center",
   },

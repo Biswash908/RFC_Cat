@@ -45,7 +45,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#ded8d7",
     backgroundColor: "white",
-    marginTop: isSmallDevice ? -12 : -10,
   },
   totalText: {
     fontSize: rs(isSmallDevice ? 16 : 18),
