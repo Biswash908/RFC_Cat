@@ -3,6 +3,7 @@
 import { useLayoutEffect } from "react"
 import { View, StyleSheet, StatusBar, Linking, TouchableOpacity, Text, ScrollView } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
+import { FontAwesome } from "@expo/vector-icons"
 import { useSaveContext } from "../context/SaveContext"
 import { SupportLinkItem } from "../components/support/SupportLinkItem"
 import { supportLinks } from "../constants/support-links"
@@ -22,7 +23,7 @@ const InfoAndSupportScreen = ({ navigation }) => {
 
   const handleShowWalkthroughAgain = async () => {
     await resetFoodInputWalkthrough()
-    navigation.navigate("Home")
+    navigation.navigate("Home", { showTutorial: true })
   }
 
   useLayoutEffect(() => {
@@ -42,8 +43,11 @@ const InfoAndSupportScreen = ({ navigation }) => {
           />
         ))}
 
-        <TouchableOpacity style={styles.walkthroughButton} onPress={handleShowWalkthroughAgain}>
-          <Text style={styles.walkthroughButtonText}>Show Tutorial Again</Text>
+        <TouchableOpacity style={styles.tutorialItem} onPress={handleShowWalkthroughAgain}>
+          <View style={styles.iconContainer}>
+            <FontAwesome name="repeat" size={24} color="#000080" style={styles.icon} />
+          </View>
+          <Text style={styles.tutorialItemText}>Show Tutorial Again</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -59,21 +63,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 0,
   },
-  walkthroughButton: {
-    backgroundColor: "#000080",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+  tutorialItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ccc",
+  },
+  icon: {
+    marginRight: 12,
+  },
+  tutorialItemText: {
+    fontSize: 18,
+    color: "black",
+  },
+  iconContainer: {
+    width: 38,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 20,
-    marginBottom: 20,
-  },
-  walkthroughButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
-    fontFamily: "Roboto-Medium",
   },
 })
 

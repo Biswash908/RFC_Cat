@@ -36,6 +36,7 @@ const FoodInputScreen: React.FC = () => {
   const { hasSeenFoodInputWalkthrough, setFoodInputWalkthroughSeen } = useSaveContext()
   const { start, copilotEvents } = useCopilot()
   const [containerReady, setContainerReady] = useState(false)
+  const [shouldShowTutorial, setShouldShowTutorial] = useState(false)
   const startedRef = useRef(false)
 
   const {
@@ -109,9 +110,21 @@ const FoodInputScreen: React.FC = () => {
     checkForChanges()
   }, [ingredients, newMeat, newBone, newOrgan, selectedRatio, checkForChanges])
 
-  // Setup walkthrough - shows on every launch for now
+  // Listen for navigation params to check if tutorial should be shown
   useEffect(() => {
-    if (!containerReady || startedRef.current) return
+    const unsubscribe = navigation.addListener("focus", () => {
+      const params = navigation.getState().routes[navigation.getState().index]?.params as any
+      if (params?.showTutorial) {
+        setShouldShowTutorial(true)
+      }
+    })
+
+    return unsubscribe
+  }, [navigation])
+
+  // Setup walkthrough - only shows when explicitly requested
+  useEffect(() => {
+    if (!containerReady || startedRef.current || !shouldShowTutorial) return
 
     startedRef.current = true
 
@@ -127,7 +140,7 @@ const FoodInputScreen: React.FC = () => {
     }, 300)
 
     return () => clearTimeout(timeout)
-  }, [containerReady, start])
+  }, [containerReady, start, shouldShowTutorial])
 
   // Handle walkthrough completion
   useEffect(() => {
@@ -207,7 +220,7 @@ const FoodInputScreen: React.FC = () => {
           <CopilotStep
             name="ingredientList"
             order={2}
-            text="This area will show all the ingredients you add to your recipe. Each ingredient will appear here so you can review, edit, or remove it."
+            text="Here is the list of ingredients you've added. You can review, edit, or remove items before saving."
             verticalOffset={Platform.OS === "ios" ? 0 : 5}
           >
             <WalkthroughableView style={{ flex: 1, width: "100%" }}>

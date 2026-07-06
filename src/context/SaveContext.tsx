@@ -22,7 +22,7 @@ const SaveContext = createContext<SaveContextType | undefined>(undefined)
 export const SaveProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [customRatio, setCustomRatio] = useState<{ meat: number; bone: number; organ: number } | null>(null)
   const [selectedRatio, setSelectedRatio] = useState<{ meat: number; bone: number; organ: number } | null>(null)
-  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false)
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(true)
   const [hasSeenFoodInputWalkthrough, setHasSeenFoodInputWalkthrough] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
 
@@ -30,10 +30,10 @@ export const SaveProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     const initializeState = async () => {
       try {
-        // Load onboarding state
+        // Load onboarding state (default to completed to skip onboarding screen)
         const onboardingCompleted = await AsyncStorage.getItem("hasCompletedOnboarding")
-        if (onboardingCompleted === "true") {
-          setHasCompletedOnboarding(true)
+        if (onboardingCompleted === "false") {
+          setHasCompletedOnboarding(false)
         }
 
         // Load walkthrough state
